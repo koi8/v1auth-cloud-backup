@@ -1,5 +1,5 @@
 #!/usr/local/bin/bash
-#version 0.2.24
+#version 0.2.26
 
 CONFIG="/root/scripts/cloud_backup.conf"
 # Read config file
@@ -45,18 +45,31 @@ lock()
 
 include_exclude()
 {
+#building include list from FLIST
   for include in ${FLIST}   
     do
       TMP=" --include="$include
       INCLUDE=$INCLUDE$TMP
   done
+
+#building exclude list from EXLIST  
   for exclude in ${EXLIST}
       do
       TMP=" --exclude "$exclude
       EXCLUDE=$EXCLUDE$TMP
   done
+  
+#excluding all nfs and nullfs(bind) mounts
+  MOUNTS=`mount -l|grep "nfs\|nullfs\|bind"|grep -v "sunrpc\|nfsd"|awk '{print $3}'`
+  for mount in ${MOUNTS}
+      do
+      TMP=" --exclude "${mount}
+      EXCLUDE=$EXCLUDE$TMP
+  done
+  
+#now excluding everything instead of included
     TMP=" --exclude=**"
-    EXCLUDE=$EXCLUDE$TMP
+    INCLUDE=$INCLUDE$TMP
 }
 
 usage()
@@ -100,7 +113,7 @@ backup()
   setlogs
   lock
   include_exclude
-  $DUPLY -v3 --full-if-older-than ${FULLIFOLDER} --volsize ${VOLSIZE} --asynchronous-upload ${STATIC_OPTIONS} ${INCLUDE} ${EXCLUDE} / cf+http://${container} >>${LOG} 2>>${LOG}
+  $DUPLY -v3 --full-if-older-than ${FULLIFOLDER} --volsize ${VOLSIZE} --asynchronous-upload ${STATIC_OPTIONS} ${EXCLUDE} ${INCLUDE} / cf+http://${container} >>${LOG} 2>>${LOG}
   #CLEANUP all old backups older then 14 days
   echo "cleaning up:" >>${LOG} 2>>${LOG}
   $DUPLY remove-older-than ${REMOVEOLDERTHEN} --force ${STATIC_OPTIONS} cf+http://${container} >>${LOG} 2>>${LOG}
