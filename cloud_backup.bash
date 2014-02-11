@@ -147,10 +147,10 @@ cron_install()
 {
 case "$1" in
   freebsd)
-    echo "installing freebsd cron"
     crontab -l > /root/crontab
     echo "30 6 * * * /usr/local/bin/bash /root/scripts/cloud_backup.bash backup" >> /root/crontab
     crontab /root/crontab
+    rm -rf /root/crontab
     ;;
     
   linux)
@@ -158,6 +158,7 @@ case "$1" in
     crontab -l > /root/crontab
     echo "30 6 * * * /bin/bash /root/scripts/cloud_backup.bash backup" >> /root/crontab
     crontab /root/crontab
+    rm -rf /root/crontab
     ;;
     
   *)
@@ -174,22 +175,20 @@ case `uname -s` in
     echo "It's Linux"
     chmod +x ~/scripts/cloud_backup.bash
     #nrpe
-    [ -e /usr/lib64/nagios/plugins/cloud_backup.bash ] || ln -s /root/scripts/cloud_backup.bash /usr/lib64/nagios/plugins/cloud_backup.bash
-    grep -q 'check_managed_backup' /etc/nagios/nrpe.cfg || echo "command[check_managed_backup]=/bin/bash /usr/lib64/nagios/plugins/cloud_backup.bash check" >> /etc/nagios/nrpe.cfg
-    /sbin/service nrpe restart
+    [ -e /usr/lib64/nagios/plugins/cloud_backup.bash ] || ln -s /root/scripts/cloud_backup.bash /usr/lib64/nagios/plugins/cloud_backup.bash && echo "Symlink /usr/lib64/nagios/plugins/cloud_backup.bash created"
+    grep -q 'check_managed_backup' /etc/nagios/nrpe.cfg || echo "command[check_managed_backup]=/bin/bash /usr/lib64/nagios/plugins/cloud_backup.bash check" >> /etc/nagios/nrpe.cfg && /sbin/service nrpe restart && echo "NRPE command installed"
     #cron
-    crontab -l|grep -q "cloud_backup.bash backup" || cron_install linux 
+    crontab -l|grep -q "cloud_backup.bash backup" || cron_install linux && echo "Cron added"
     ;;
     
   FreeBSD)
     echo "It's FreeBSD"
     chmod +x ~/scripts/cloud_backup.bash
     #nrpe
-    [ -e /usr/local/libexec/nagios/cloud_backup.bash ] || ln -s /root/scripts/cloud_backup.bash /usr/local/libexec/nagios/cloud_backup.bash
-    grep -q 'check_managed_backup' /usr/local/etc/nrpe.cfg || echo "command[check_managed_backup]=/usr/local/libexec/nagios/cloud_backup.bash check" >> /usr/local/etc/nrpe.cfg
-    /usr/local/etc/rc.d/nrpe2 restart
+    [ -e /usr/local/libexec/nagios/cloud_backup.bash ] || ln -s /root/scripts/cloud_backup.bash /usr/local/libexec/nagios/cloud_backup.bash && echo "Creating symlink /usr/local/libexec/nagios/cloud_backup.bash"
+    grep -q 'check_managed_backup' /usr/local/etc/nrpe.cfg || echo "command[check_managed_backup]=/usr/local/libexec/nagios/cloud_backup.bash check" >> /usr/local/etc/nrpe.cfg && /usr/local/etc/rc.d/nrpe2 restart && echo "NRPE command installed"
     #cron
-    crontab -l|grep -q "cloud_backup.bash backup" || cron_install freebsd
+    crontab -l|grep -q "cloud_backup.bash backup" || cron_install freebsd && echo "Cron added"
     ;;
     
   *)
