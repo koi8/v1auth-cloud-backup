@@ -113,6 +113,7 @@ backup()
   setlogs
   lock
   include_exclude
+  container_handler
   $DUPLY -v3 --full-if-older-than ${FULLIFOLDER} --volsize ${VOLSIZE} --asynchronous-upload ${STATIC_OPTIONS} ${EXCLUDE} ${INCLUDE} / cf+http://${container} >>${LOG} 2>>${LOG}
   #CLEANUP all old backups older then 14 days
   echo "cleaning up:" >>${LOG} 2>>${LOG}
@@ -196,6 +197,12 @@ case `uname -s` in
     ;;
     
 esac
+}
+
+container_handler()
+{
+  #checking container and creating it if it is not exists
+  uname -s| grep FreeBSD && lftp -e "set net:max-retries 2; ls $container; bye" -u $CLOUDFILES_USERNAME,$CLOUDFILES_APIKEY $CLOUDFILES_FTPHOST || lftp -e "set net:max-retries 2; mkdir $container; bye" -u $CLOUDFILES_USERNAME,$CLOUDFILES_APIKEY $CLOUDFILES_FTPHOST && echo "Container created"
 }
 
 restore()
