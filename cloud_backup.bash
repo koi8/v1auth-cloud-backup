@@ -124,12 +124,12 @@ backup()
     $DUPLY remove-all-inc-of-but-n-full 1 --force ${STATIC_OPTIONS} ftp://${CLOUDFILES_USERNAME}:${CLOUDFILES_APIKEY}@${CLOUDFILES_FTPHOST}/${container} >>${LOG} 2>>${LOG}
   else
   echo "FTPUPLOAD disabled"
-#    $DUPLY -v3 --full-if-older-than ${FULLIFOLDER} --volsize ${VOLSIZE} --asynchronous-upload ${STATIC_OPTIONS} ${EXCLUDE} ${INCLUDE} / cf+http://${container} >>${LOG} 2>>${LOG}  
-#    #CLEANUP all old backups older then 14 days
-#    echo "cleaning up:" >>${LOG} 2>>${LOG}
-#    $DUPLY remove-older-than ${REMOVEOLDERTHEN} --force ${STATIC_OPTIONS} cf+http://${container} >>${LOG} 2>>${LOG}
-#    #REMOVE OLD INCREMENTAL CHAINS
-#    $DUPLY remove-all-inc-of-but-n-full 1 --force ${STATIC_OPTIONS} cf+http://${container} >>${LOG} 2>>${LOG}
+    $DUPLY -v3 --full-if-older-than ${FULLIFOLDER} --volsize ${VOLSIZE} --asynchronous-upload ${STATIC_OPTIONS} ${EXCLUDE} ${INCLUDE} / cf+http://${container} >>${LOG} 2>>${LOG}  
+    #CLEANUP all old backups older then 14 days
+    echo "cleaning up:" >>${LOG} 2>>${LOG}
+    $DUPLY remove-older-than ${REMOVEOLDERTHEN} --force ${STATIC_OPTIONS} cf+http://${container} >>${LOG} 2>>${LOG}
+    #REMOVE OLD INCREMENTAL CHAINS
+    $DUPLY remove-all-inc-of-but-n-full 1 --force ${STATIC_OPTIONS} cf+http://${container} >>${LOG} 2>>${LOG}
   fi
 
 
