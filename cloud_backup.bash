@@ -1,5 +1,5 @@
 #!/usr/local/bin/bash
-#version 0.2.28
+#version 0.2.29
 
 CONFIG="/root/scripts/cloud_backup.conf"
 # Read config file
@@ -116,6 +116,7 @@ backup()
   container_handler
   if [ "$FTPUPLOAD" == "yes" ]; then
   echo "FTPUPLOAD enabled"
+    export CLOUDFILES_USERNAME="$TENANT_NAME.$USER_NAME"
     $DUPLY -v3 --full-if-older-than ${FULLIFOLDER} --volsize ${VOLSIZE} --asynchronous-upload ${STATIC_OPTIONS} ${EXCLUDE} ${INCLUDE} / ftp://${CLOUDFILES_USERNAME}:${CLOUDFILES_APIKEY}@${CLOUDFILES_FTPHOST}/${container} >>${LOG} 2>>${LOG}
     #CLEANUP all old backups older then 14 days
     echo "cleaning up:" >>${LOG} 2>>${LOG}
@@ -124,6 +125,7 @@ backup()
     $DUPLY remove-all-inc-of-but-n-full 1 --force ${STATIC_OPTIONS} ftp://${CLOUDFILES_USERNAME}:${CLOUDFILES_APIKEY}@${CLOUDFILES_FTPHOST}/${container} >>${LOG} 2>>${LOG}
   else
   echo "FTPUPLOAD disabled"
+    export CLOUDFILES_USERNAME="$TENANT_NAME:$USER_NAME"
     $DUPLY -v3 --full-if-older-than ${FULLIFOLDER} --volsize ${VOLSIZE} --asynchronous-upload ${STATIC_OPTIONS} ${EXCLUDE} ${INCLUDE} / cf+http://${container} >>${LOG} 2>>${LOG}  
     #CLEANUP all old backups older then 14 days
     echo "cleaning up:" >>${LOG} 2>>${LOG}
@@ -140,7 +142,15 @@ list()
   settmp
   setlogs
   lock
-  $DUPLY list-current-files ${STATIC_OPTIONS} cf+http://${container}
+  if [ "$FTPUPLOAD" == "yes" ]; then
+    echo "FTPUPLOAD enabled"
+    export CLOUDFILES_USERNAME="$TENANT_NAME.$USER_NAME"
+    $DUPLY list-current-files ${STATIC_OPTIONS} ftp://${CLOUDFILES_USERNAME}:${CLOUDFILES_APIKEY}@${CLOUDFILES_FTPHOST}/${container}
+  else
+    echo "FTPUPLOAD disabled"
+    export CLOUDFILES_USERNAME="$TENANT_NAME:$USER_NAME"
+    $DUPLY list-current-files ${STATIC_OPTIONS} cf+http://${container}
+  fi
 }
 
 check()
@@ -215,6 +225,7 @@ esac
 container_handler()
 {
   #checking container and creating it if it is not exists
+  export CLOUDFILES_USERNAME="$TENANT_NAME.$USER_NAME"
   uname -s| grep FreeBSD && lftp -e "set net:max-retries 2; ls $container; bye" -u $CLOUDFILES_USERNAME,$CLOUDFILES_APIKEY $CLOUDFILES_FTPHOST || lftp -e "set net:max-retries 2; mkdir $container; bye" -u $CLOUDFILES_USERNAME,$CLOUDFILES_APIKEY $CLOUDFILES_FTPHOST && echo "Container created"
 }
 
@@ -223,19 +234,42 @@ restore()
   settmp
   setlogs
   lock
-case "$2" in
-  -t)
-    $DUPLY ${STATIC_OPTIONS} -t $3 --file-to-restore=$4 cf+http://${container} $5
-    ;;
+  if [ "$FTPUPLOAD" == "yes" ]; then
+    echo "FTPUPLOAD enabled"
+    export CLOUDFILES_USERNAME="$TENANT_NAME.$USER_NAME"
+    case "$2" in
+      -t)
+        $DUPLY ${STATIC_OPTIONS} -t $3 --file-to-restore=$4 ftp://${CLOUDFILES_USERNAME}:${CLOUDFILES_APIKEY}@${CLOUDFILES_FTPHOST}/${container} $5
+        ;;
     
-  full)
-    $DUPLY ${STATIC_OPTIONS} cf+http://${container} $3
-    ;;
+      full)
+        $DUPLY ${STATIC_OPTIONS} ftp://${CLOUDFILES_USERNAME}:${CLOUDFILES_APIKEY}@${CLOUDFILES_FTPHOST}/${container} $3
+        ;;
     
-  *)
-    $DUPLY ${STATIC_OPTIONS} --file-to-restore=$2 cf+http://${container} $3
+      *)
+        $DUPLY ${STATIC_OPTIONS} --file-to-restore=$2 ftp://${CLOUDFILES_USERNAME}:${CLOUDFILES_APIKEY}@${CLOUDFILES_FTPHOST}/${container} $3
 
-esac
+   esac
+  
+  else
+    echo "FTP disabled"
+    export CLOUDFILES_USERNAME="$TENANT_NAME:$USER_NAME"
+    case "$2" in
+      -t)
+        $DUPLY ${STATIC_OPTIONS} -t $3 --file-to-restore=$4 cf+http://${container} $5
+        ;;
+    
+      full)
+        $DUPLY ${STATIC_OPTIONS} cf+http://${container} $3
+        ;;
+    
+      *)
+        $DUPLY ${STATIC_OPTIONS} --file-to-restore=$2 cf+http://${container} $3
+
+   esac
+   
+  fi
+
 }
 
 case "$1" in
