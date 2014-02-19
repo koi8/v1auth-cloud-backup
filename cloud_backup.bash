@@ -60,7 +60,7 @@ include_exclude()
   done
   
 #excluding all nfs and nullfs(bind) mounts
-  MOUNTS=`mount -l|grep "nfs\|nullfs\|bind"|grep -v "sunrpc\|nfsd"|awk '{print $3}'`
+  MOUNTS=`mount|grep "nfs\|nullfs\|bind"|grep -v "sunrpc\|nfsd"|awk '{print $3}'`
   for mount in ${MOUNTS}
       do
       TMP=" --exclude "${mount}
