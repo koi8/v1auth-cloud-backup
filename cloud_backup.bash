@@ -1,5 +1,5 @@
 #!/usr/local/bin/bash
-#version 0.2.29
+#version 0.2.30
 
 CONFIG="/root/scripts/cloud_backup.conf"
 # Read config file
@@ -172,7 +172,7 @@ cron_install()
 case "$1" in
   freebsd)
     crontab -l > /root/crontab
-    echo "30 6 * * * /usr/local/bin/bash /root/scripts/cloud_backup.bash backup" >> /root/crontab
+    echo "30 6 * * * /usr/local/bin/trickle -u 640 /usr/local/bin/bash /root/scripts/cloud_backup.bash backup" >> /root/crontab
     crontab /root/crontab
     rm -rf /root/crontab
     ;;
@@ -180,7 +180,7 @@ case "$1" in
   linux)
     echo "installing linux cron"
     crontab -l > /root/crontab
-    echo "30 6 * * * /bin/bash /root/scripts/cloud_backup.bash backup" >> /root/crontab
+    echo "30 6 * * * /usr/bin/trickle -u 640 /bin/bash /root/scripts/cloud_backup.bash backup" >> /root/crontab
     crontab /root/crontab
     rm -rf /root/crontab
     ;;
