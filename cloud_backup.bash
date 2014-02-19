@@ -167,6 +167,20 @@ check()
   echo "Managed backup is OK"; exit 0;
 }
 
+collection_status()
+{   
+  settmp
+  setlogs
+  #lock
+  if [ "$FTPUPLOAD" == "yes" ]; then
+    export CLOUDFILES_USERNAME="$TENANT_NAME.$USER_NAME"
+    $DUPLY collection-status ${STATIC_OPTIONS} ftp://${CLOUDFILES_USERNAME}:${CLOUDFILES_APIKEY}@${CLOUDFILES_FTPHOST}/${container}
+  else  
+    export CLOUDFILES_USERNAME="$TENANT_NAME:$USER_NAME"
+    $DUPLY collection-status ${STATIC_OPTIONS} cf+http://${container}
+  fi
+}
+
 cron_install()
 {
 case "$1" in
