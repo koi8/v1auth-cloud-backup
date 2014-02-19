@@ -306,7 +306,11 @@ case "$1" in
   install)
     clb_install
     ;;
-
+    
+  status)
+    collection_status
+    ;;
+    
   *)
     usage
     ;;
