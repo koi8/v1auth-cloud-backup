@@ -19,7 +19,7 @@ DUPLY=`which duplicity`
 settmp()
 {
   mkdir -p /home/tmp >&/dev/null
-  export TMPDIR=/usr/home/tmp
+  export TMPDIR="${ARCHDIR}"
 }
 
 setlogs()
