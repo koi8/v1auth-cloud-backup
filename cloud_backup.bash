@@ -103,7 +103,7 @@ usage()
   echo "  cloud_backup.bash restore -t 2D usr/test /home/koi/restored_test"
   echo "  Will be restored copy two days ago of the file /usr/test as /home/koi/restored_test"
   echo ""
-  echo "  cloud_backup.bash full /home/koi/full_restored"
+  echo "  cloud_backup.bash restore full /home/koi/full_restored"
   echo "  Will be restored full copy to the folder /home/koi/full_restored"
 }
 
@@ -216,7 +216,7 @@ case `uname -s` in
     chmod +x ~/scripts/cloud_backup.bash
     #nrpe
     [ -e /usr/lib64/nagios/plugins/cloud_backup.bash ] || ln -s /root/scripts/cloud_backup.bash /usr/lib64/nagios/plugins/cloud_backup.bash && echo "Symlink /usr/lib64/nagios/plugins/cloud_backup.bash created"
-    grep -q 'check_managed_backup' /etc/nagios/nrpe.cfg || echo "command[check_managed_backup]=/bin/bash /usr/lib64/nagios/plugins/cloud_backup.bash check" >> /etc/nagios/nrpe.cfg && /sbin/service nrpe restart && echo "NRPE command installed"
+    grep -q 'check_managed_backup' /etc/nagios/nrpe.cfg || echo "command[check_managed_backup]=/usr/lib64/nagios/plugins/cloud_backup.bash check" >> /etc/nagios/nrpe.cfg && /sbin/service nrpe restart && echo "NRPE command installed"
     #cron
     crontab -l|grep -q "cloud_backup.bash backup" || cron_install linux && echo "Cron added"
     ;;
