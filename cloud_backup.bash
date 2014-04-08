@@ -3,6 +3,7 @@
 
 CONFIG="/root/scripts/cloud_backup.conf"
 # Read config file
+REMOVEOLDINCCOUNT='1'
 if [ ! -z "$CONFIG" -a -f "$CONFIG" ];
 then
   . $CONFIG
@@ -27,15 +28,15 @@ setlogs()
   mkdir -p "${LOGDIR}" >&/dev/null
   LOCKFILE="${LOGDIR}/backup.lock"
   DATA=`date "+%y%m%d-%H:%M:%S"`
-  LOG="${LOGDIR}/${DATA}.log"
+  LOG="${LOGDIR}/cloud_backup.log"
 }
 
 lock()
 {
-  echo "Attempting to acquire lock ${LOCKFILE}" >>${LOG} 2>>${LOG}
+  echo "Attempting to acquire lock ${LOCKFILE}" | awk '{system("date \"+%Y-%m-%d %H:%M:%S\"|tr -d \"\\n\"");print " "$0}' >>${LOG} 2>>${LOG}
   if ( set -o noclobber; echo "$$" > "${LOCKFILE}" ) 2> /dev/null; then
       trap 'EXITCODE=$?; echo "Removing lock. Exit code: ${EXITCODE}" >>${LOG} 2>>${LOG}; rm -f "${LOCKFILE}"' 0
-      echo "successfully acquired lock." >>${LOG} 2>>${LOG}
+      echo "successfully acquired lock." | awk '{system("date \"+%Y-%m-%d %H:%M:%S\"|tr -d \"\\n\"");print " "$0}' >>${LOG} 2>>${LOG}
   else
       echo "lock failed, could not acquire ${LOCKFILE}" | tee -a ${LOG} >&2
       echo "lock held by $(cat ${LOCKFILE})" | tee -a ${LOG} >&2
@@ -117,21 +118,21 @@ backup()
   if [ "$FTPUPLOAD" == "yes" ]; then
   echo "FTPUPLOAD enabled"
     export CLOUDFILES_USERNAME="$TENANT_NAME.$USER_NAME"
-    $DUPLY -v3 --full-if-older-than ${FULLIFOLDER} --volsize ${VOLSIZE} --asynchronous-upload ${STATIC_OPTIONS} ${EXCLUDE} ${INCLUDE} / ftp://${CLOUDFILES_USERNAME}:${CLOUDFILES_APIKEY}@${CLOUDFILES_FTPHOST}/${container} >>${LOG} 2>>${LOG}
+    $DUPLY -v3 --full-if-older-than ${FULLIFOLDER} --volsize ${VOLSIZE} --asynchronous-upload ${STATIC_OPTIONS} ${EXCLUDE} ${INCLUDE} / ftp://${CLOUDFILES_USERNAME}:${CLOUDFILES_APIKEY}@${CLOUDFILES_FTPHOST}/${container} | awk '{system("date \"+%Y-%m-%d %H:%M:%S\"|tr -d \"\\n\"");print " "$0}' >>${LOG} 2>>${LOG}
     #CLEANUP all old backups older then 14 days
-    echo "cleaning up:" >>${LOG} 2>>${LOG}
-    $DUPLY remove-older-than ${REMOVEOLDERTHEN} --force ${STATIC_OPTIONS} ftp://${CLOUDFILES_USERNAME}:${CLOUDFILES_APIKEY}@${CLOUDFILES_FTPHOST}/${container} >>${LOG} 2>>${LOG}
+    echo "cleaning up:" | awk '{system("date \"+%Y-%m-%d %H:%M:%S\"|tr -d \"\\n\"");print " "$0}' >>${LOG} 2>>${LOG}
+    $DUPLY remove-older-than ${REMOVEOLDERTHEN} --force ${STATIC_OPTIONS} ftp://${CLOUDFILES_USERNAME}:${CLOUDFILES_APIKEY}@${CLOUDFILES_FTPHOST}/${container} | awk '{system("date \"+%Y-%m-%d %H:%M:%S\"|tr -d \"\\n\"");print " "$0}' >>${LOG} 2>>${LOG}
     #REMOVE OLD INCREMENTAL CHAINS
-    $DUPLY remove-all-inc-of-but-n-full 1 --force ${STATIC_OPTIONS} ftp://${CLOUDFILES_USERNAME}:${CLOUDFILES_APIKEY}@${CLOUDFILES_FTPHOST}/${container} >>${LOG} 2>>${LOG}
+    $DUPLY remove-all-inc-of-but-n-full $REMOVEOLDINCCOUNT --force ${STATIC_OPTIONS} ftp://${CLOUDFILES_USERNAME}:${CLOUDFILES_APIKEY}@${CLOUDFILES_FTPHOST}/${container} | awk '{system("date \"+%Y-%m-%d %H:%M:%S\"|tr -d \"\\n\"");print " "$0}' >>${LOG} 2>>${LOG}
   else
   echo "FTPUPLOAD disabled"
     export CLOUDFILES_USERNAME="$TENANT_NAME:$USER_NAME"
-    $DUPLY -v3 --full-if-older-than ${FULLIFOLDER} --volsize ${VOLSIZE} --asynchronous-upload ${STATIC_OPTIONS} ${EXCLUDE} ${INCLUDE} / cf+http://${container} >>${LOG} 2>>${LOG}  
+    $DUPLY -v3 --full-if-older-than ${FULLIFOLDER} --volsize ${VOLSIZE} --asynchronous-upload ${STATIC_OPTIONS} ${EXCLUDE} ${INCLUDE} / cf+http://${container} | awk '{system("date \"+%Y-%m-%d %H:%M:%S\"|tr -d \"\\n\"");print " "$0}' >>${LOG} 2>>${LOG}  
     #CLEANUP all old backups older then 14 days
-    echo "cleaning up:" >>${LOG} 2>>${LOG}
-    $DUPLY remove-older-than ${REMOVEOLDERTHEN} --force ${STATIC_OPTIONS} cf+http://${container} >>${LOG} 2>>${LOG}
+    echo "cleaning up:" | awk '{system("date \"+%Y-%m-%d %H:%M:%S\"|tr -d \"\\n\"");print " "$0}' >>${LOG} 2>>${LOG}
+    $DUPLY remove-older-than ${REMOVEOLDERTHEN} --force ${STATIC_OPTIONS} cf+http://${container} | awk '{system("date \"+%Y-%m-%d %H:%M:%S\"|tr -d \"\\n\"");print " "$0}' >>${LOG} 2>>${LOG}
     #REMOVE OLD INCREMENTAL CHAINS
-    $DUPLY remove-all-inc-of-but-n-full 1 --force ${STATIC_OPTIONS} cf+http://${container} >>${LOG} 2>>${LOG}
+    $DUPLY remove-all-inc-of-but-n-full $REMOVEOLDINCCOUNT --force ${STATIC_OPTIONS} cf+http://${container} | awk '{system("date \"+%Y-%m-%d %H:%M:%S\"|tr -d \"\\n\"");print " "$0}' >>${LOG} 2>>${LOG}
   fi
 
 
