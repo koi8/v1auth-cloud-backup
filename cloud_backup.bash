@@ -1,5 +1,5 @@
 #!/usr/local/bin/bash
-#version 0.2.32
+#version 0.2.36
 
 CONFIG="/root/scripts/cloud_backup.conf"
 # Read config file
@@ -27,7 +27,6 @@ setlogs()
 {
   mkdir -p "${LOGDIR}" >&/dev/null
   LOCKFILE="${LOGDIR}/backup.lock"
-  DATA=`date "+%y%m%d-%H:%M:%S"`
   LOG="${LOGDIR}/cloud_backup.log"
 }
 
@@ -156,12 +155,24 @@ list()
 
 check()
 {
+  setlogs
+  #checking for log file updates(make sure cron is run every day)
   fresh_backup_count=`find /home/logs/backup/* -mtime -1|wc -l`
-  if [[ "$fresh_backup_count" -le "0" ]]; then echo "Managed backup is CRITICAL. Fresh log files not found"; exit 2; fi
-  for i in `ls /home/logs/backup/`; do
-    ecount=`grep 'Errors' /home/logs/backup/${i}|cut -d ' ' -f 2`
-    if [[ $ecount -gt 0 ]]; then echo "Managed backup is CRITICAL. Check logfile /home/logs/backup/${i}"; exit 1; fi
-  done
+  if [[ "$fresh_backup_count" -le "0" ]]; then echo "Managed backup is CRITICAL. Fresh log file not found"; exit 2; fi
+  
+  #check for FTPUPLOAD(should be enabled on 413 errors)
+  request_entiti=`grep '413 Request Entity Too Large' ${LOG}|cut -d '-' -f 1`
+  if [[ "$request_entiti" -gt 0 ]]; then
+     if [ "$FTPUPLOAD" == "no" ]; then
+      echo "Managed backup is CRITICAL. Request Entity Too Large, change FTPUPLOAD param to yes"; exit 2;
+    fi
+  fi
+  
+  #stupid error message
+#  for i in `ls /home/logs/backup/`; do
+#    ecount=`grep 'Errors' /home/logs/backup/${i}|cut -d ' ' -f 2`
+#    if [[ $ecount -gt 0 ]]; then echo "Managed backup is CRITICAL. Check logfile /home/logs/backup/${i}"; exit 1; fi
+#  done
 
 
 
@@ -188,7 +199,7 @@ case "$1" in
   freebsd)
     crontab -l > /root/crontab
     echo "" >> /root/crontab
-    echo "30 6 * * * /usr/local/bin/trickle -u 640 /usr/local/bin/bash /root/scripts/cloud_backup.bash backup" >> /root/crontab
+    echo "30 6 * * * /usr/local/bin/trickle -u 6400 /usr/local/bin/bash /root/scripts/cloud_backup.bash backup" >> /root/crontab
     crontab /root/crontab
     rm -rf /root/crontab
     ;;
@@ -197,7 +208,7 @@ case "$1" in
     echo "installing linux cron"
     crontab -l > /root/crontab
     echo "" >> /root/crontab
-    echo "30 6 * * * /usr/bin/trickle -u 640 /bin/bash /root/scripts/cloud_backup.bash backup" >> /root/crontab
+    echo "30 6 * * * /usr/bin/trickle -u 6400 /bin/bash /root/scripts/cloud_backup.bash backup" >> /root/crontab
     crontab /root/crontab
     rm -rf /root/crontab
     ;;
