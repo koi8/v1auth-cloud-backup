@@ -1,9 +1,10 @@
 #!/usr/local/bin/bash
-#version 0.2.36
+#version 0.2.41
 
 CONFIG="/root/scripts/cloud_backup.conf"
 # Read config file
 REMOVEOLDINCCOUNT='1'
+CRON_MTIME='1'
 if [ ! -z "$CONFIG" -a -f "$CONFIG" ];
 then
   . $CONFIG
@@ -113,7 +114,7 @@ backup()
   setlogs
   lock
   include_exclude
-  container_handler
+  container_handler|awk '{system("date \"+%Y-%m-%d %H:%M:%S\"|tr -d \"\\n\"");print " "$0}' >>${LOG} 2>>${LOG}
   if [ "$FTPUPLOAD" == "yes" ]; then
   echo "FTPUPLOAD enabled"
     export CLOUDFILES_USERNAME="$TENANT_NAME.$USER_NAME"
@@ -157,7 +158,7 @@ check()
 {
   setlogs
   #checking for log file updates(make sure cron is run every day)
-  fresh_backup_count=`find /home/logs/backup/* -mtime -1|wc -l`
+  fresh_backup_count=`find ${OGDIR}/* -mtime -${CRON_MTIME}|wc -l`
   if [[ "$fresh_backup_count" -le "0" ]]; then echo "Managed backup is CRITICAL. Fresh log file not found"; exit 2; fi
   
   #check for FTPUPLOAD(should be enabled on 413 errors)
@@ -168,6 +169,12 @@ check()
     fi
   fi
   
+  #check for Auth errors
+  day=`date "+%Y-%m-%d"`
+  auth_error=`cat ${LOG}| grep $day | grep 'AuthenticationFailed\|was not accepted for login'|cut -d '-' -f 1|head -n 1`
+  if [[ "$auth_error" -gt 0 ]]; then
+    echo "Managed backup is CRITICAL. Authentication Failed. Check and test credentials, schedule monitoring till the next day"; exit 2;
+  fi
   #stupid error message
 #  for i in `ls /home/logs/backup/`; do
 #    ecount=`grep 'Errors' /home/logs/backup/${i}|cut -d ' ' -f 2`
@@ -254,7 +261,7 @@ container_handler()
 {
   #checking container and creating it if it is not exists
   export CLOUDFILES_USERNAME="$TENANT_NAME.$USER_NAME"
-  uname -s| grep FreeBSD && lftp -e "set net:max-retries 2; ls $container; bye" -u $CLOUDFILES_USERNAME,$CLOUDFILES_APIKEY $CLOUDFILES_FTPHOST || lftp -e "set net:max-retries 2; mkdir $container; bye" -u $CLOUDFILES_USERNAME,$CLOUDFILES_APIKEY $CLOUDFILES_FTPHOST && echo "Container created"
+  uname -s| grep FreeBSD && lftp -e "set net:max-retries 2; ls $container; bye" -u $CLOUDFILES_USERNAME,$CLOUDFILES_APIKEY $CLOUDFILES_FTPHOST|awk '{system("date \"+%Y-%m-%d %H:%M:%S\"|tr -d \"\\n\"");print " "$0}' >>${LOG} 2>>${LOG} || lftp -e "set net:max-retries 2; mkdir $container; bye" -u $CLOUDFILES_USERNAME,$CLOUDFILES_APIKEY $CLOUDFILES_FTPHOST|awk '{system("date \"+%Y-%m-%d %H:%M:%S\"|tr -d \"\\n\"");print " "$0}' >>${LOG} 2>>${LOG} && echo "Container created"|awk '{system("date \"+%Y-%m-%d %H:%M:%S\"|tr -d \"\\n\"");print " "$0}' >>${LOG} 2>>${LOG}
 }
 
 restore()
