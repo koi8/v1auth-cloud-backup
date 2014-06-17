@@ -1,5 +1,5 @@
 #!/usr/local/bin/bash
-#version 0.2.41
+#version 0.2.42
 
 CONFIG="/root/scripts/cloud_backup.conf"
 # Read config file
@@ -73,6 +73,30 @@ include_exclude()
     INCLUDE=$INCLUDE$TMP
 }
 
+include_file()
+{
+
+case `uname -s` in
+  Linux)
+    for i in `/bin/mount|cut -d ' ' -f 1 | grep -v "swap\|devpts\|proc\|sysfs\|tmpfs" | sort | uniq`; do grep $i /etc/fstab | head -n 1 | awk '{print $2}'; done >/root/scripts/cloud_backup_inc.list
+  ;;
+
+  FreeBSD)
+    for i in `/sbin/mount|cut -d ' ' -f 1 | grep -v "swap\|devpts\|proc\|sysfs\|tmpfs" | sort | uniq`; do grep $i /etc/fstab | head -n 1 | awk '{print $2}'; done >/root/scripts/cloud_backup_inc.list
+  ;;
+
+  *)
+    echo "Couldn't detect OS"
+  ;;
+
+}
+
+exclude_file()
+{
+  echo ${EXLIST} > /root/scripts/cloud_backup_exc.lst
+  mount|grep "nfs\|nullfs\|bind"|grep -v "sunrpc\|nfsd"|awk '{print $3}' >> /root/scripts/cloud_backup_exc.lst
+}
+
 usage()
 {
   echo " ALL SETTINGS ARE STORED AT cloud_backup.conf "
@@ -114,6 +138,8 @@ backup()
   setlogs
   lock
   include_exclude
+  include_file
+  exclude_file
   container_handler|awk '{system("date \"+%Y-%m-%d %H:%M:%S\"|tr -d \"\\n\"");print " "$0}' >>${LOG} 2>>${LOG}
   if [ "$FTPUPLOAD" == "yes" ]; then
   echo "FTPUPLOAD enabled"
