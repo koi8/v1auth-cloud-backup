@@ -1,5 +1,5 @@
 #!/usr/local/bin/bash
-#version 0.2.48
+#version 0.2.49
 
 CONFIG="/root/scripts/cloud_backup.conf"
 # Read config file
@@ -340,7 +340,7 @@ case `uname -s` in
     ;;
 
   FreeBSD)
-    fetch --no-verify-peer -o /root/scripts/cloud_backup.conf_template https://noc.webzilla.com/INSTALL/scripts/cloud_backup.conf_template
+    fetch -o /root/scripts/cloud_backup.conf_template https://noc.webzilla.com/INSTALL/scripts/cloud_backup.conf_template
     if ( `hostname | grep -q -e '^v-.*$'` ) ; then {
       cat /root/scripts/cloud_backup.conf_template|sed 's/CHANGEME/eu/; s/PATHTOARCH/usr\/home/'>/root/scripts/cloud_backup.conf
     }
