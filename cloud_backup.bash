@@ -340,6 +340,7 @@ case `uname -s` in
     ;;
 
   FreeBSD)
+    touch /root/scripts/cloud_backup.conf_template
     fetch -o /root/scripts/cloud_backup.conf_template https://noc.webzilla.com/INSTALL/scripts/cloud_backup.conf_template
     if ( `hostname | grep -q -e '^v-.*$'` ) ; then {
       cat /root/scripts/cloud_backup.conf_template|sed 's/CHANGEME/eu/; s/PATHTOARCH/usr\/home/'>/root/scripts/cloud_backup.conf
