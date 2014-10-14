@@ -1,5 +1,5 @@
 #!/usr/local/bin/bash
-#version 0.2.42
+#version 0.2.46
 
 CONFIG="/root/scripts/cloud_backup.conf"
 # Read config file
@@ -88,13 +88,29 @@ case `uname -s` in
   *)
     echo "Couldn't detect OS"
   ;;
+esac
 
+echo "- **" >>/root/scripts/cloud_backup_inc.list
 }
 
 exclude_file()
 {
-  echo ${EXLIST} > /root/scripts/cloud_backup_exc.lst
-  mount|grep "nfs\|nullfs\|bind"|grep -v "sunrpc\|nfsd"|awk '{print $3}' >> /root/scripts/cloud_backup_exc.lst
+  echo "${EXLIST}" > /root/scripts/cloud_backup_exc.lst
+  
+case `uname -s` in
+  Linux)
+    /bin/mount |grep "nfs\|nullfs\|bind"|grep -v "sunrpc\|nfsd"|awk '{print $3}' >> /root/scripts/cloud_backup_exc.lst
+  ;;
+
+  FreeBSD)
+    /sbin/mount |grep "nfs\|nullfs\|bind"|grep -v "sunrpc\|nfsd"|awk '{print $3}' >> /root/scripts/cloud_backup_exc.lst
+  ;;
+
+  *)
+    echo "Couldn't detect OS"
+  ;;
+esac
+
 }
 
 usage()
@@ -144,7 +160,12 @@ backup()
   if [ "$FTPUPLOAD" == "yes" ]; then
   echo "FTPUPLOAD enabled"
     export CLOUDFILES_USERNAME="$TENANT_NAME.$USER_NAME"
-    $DUPLY -v3 --full-if-older-than ${FULLIFOLDER} --volsize ${VOLSIZE} --asynchronous-upload ${STATIC_OPTIONS} ${EXCLUDE} ${INCLUDE} / ftp://${CLOUDFILES_USERNAME}:${CLOUDFILES_APIKEY}@${CLOUDFILES_FTPHOST}/${container} | awk '{system("date \"+%Y-%m-%d %H:%M:%S\"|tr -d \"\\n\"");print " "$0}' >>${LOG} 2>>${LOG}
+    #old string to backup
+#    $DUPLY -v3 --full-if-older-than ${FULLIFOLDER} --volsize ${VOLSIZE} --asynchronous-upload ${STATIC_OPTIONS} ${EXCLUDE} ${INCLUDE} / ftp://${CLOUDFILES_USERNAME}:${CLOUDFILES_APIKEY}@${CLOUDFILES_FTPHOST}/${container} | awk '{system("date \"+%Y-%m-%d %H:%M:%S\"|tr -d \"\\n\"");print " "$0}' >>${LOG} 2>>${LOG}
+
+    #new string to backup
+    $DUPLY -v3 --full-if-older-than ${FULLIFOLDER} --volsize ${VOLSIZE} --asynchronous-upload ${STATIC_OPTIONS} --exclude-globbing-filelist /root/scripts/cloud_backup_exc.list --include-globbing-filelist /root/scripts/cloud_backup_inc.list / ftp://${CLOUDFILES_USERNAME}:${CLOUDFILES_APIKEY}@${CLOUDFILES_FTPHOST}/${container} | awk '{system("date \"+%Y-%m-%d %H:%M:%S\"|tr -d \"\\n\"");print " "$0}' >>${LOG} 2>>${LOG}
+
     #CLEANUP all old backups older then 14 days
     echo "cleaning up:" | awk '{system("date \"+%Y-%m-%d %H:%M:%S\"|tr -d \"\\n\"");print " "$0}' >>${LOG} 2>>${LOG}
     $DUPLY remove-older-than ${REMOVEOLDERTHEN} --force ${STATIC_OPTIONS} ftp://${CLOUDFILES_USERNAME}:${CLOUDFILES_APIKEY}@${CLOUDFILES_FTPHOST}/${container} | awk '{system("date \"+%Y-%m-%d %H:%M:%S\"|tr -d \"\\n\"");print " "$0}' >>${LOG} 2>>${LOG}
@@ -153,7 +174,12 @@ backup()
   else
   echo "FTPUPLOAD disabled"
     export CLOUDFILES_USERNAME="$TENANT_NAME:$USER_NAME"
-    $DUPLY -v3 --full-if-older-than ${FULLIFOLDER} --volsize ${VOLSIZE} --asynchronous-upload ${STATIC_OPTIONS} ${EXCLUDE} ${INCLUDE} / cf+http://${container} | awk '{system("date \"+%Y-%m-%d %H:%M:%S\"|tr -d \"\\n\"");print " "$0}' >>${LOG} 2>>${LOG}  
+    #old string to backup
+#    $DUPLY -v3 --full-if-older-than ${FULLIFOLDER} --volsize ${VOLSIZE} --asynchronous-upload ${STATIC_OPTIONS} ${EXCLUDE} ${INCLUDE} / cf+http://${container} | awk '{system("date \"+%Y-%m-%d %H:%M:%S\"|tr -d \"\\n\"");print " "$0}' >>${LOG} 2>>${LOG}  
+
+    #new string to backup
+    $DUPLY -v3 --full-if-older-than ${FULLIFOLDER} --volsize ${VOLSIZE} --asynchronous-upload ${STATIC_OPTIONS} --exclude-globbing-filelist /root/scripts/cloud_backup_exc.list --include-globbing-filelist /root/scripts/cloud_backup_inc.list / cf+http://${container} | awk '{system("date \"+%Y-%m-%d %H:%M:%S\"|tr -d \"\\n\"");print " "$0}' >>${LOG} 2>>${LOG}  
+
     #CLEANUP all old backups older then 14 days
     echo "cleaning up:" | awk '{system("date \"+%Y-%m-%d %H:%M:%S\"|tr -d \"\\n\"");print " "$0}' >>${LOG} 2>>${LOG}
     $DUPLY remove-older-than ${REMOVEOLDERTHEN} --force ${STATIC_OPTIONS} cf+http://${container} | awk '{system("date \"+%Y-%m-%d %H:%M:%S\"|tr -d \"\\n\"");print " "$0}' >>${LOG} 2>>${LOG}
@@ -168,7 +194,6 @@ list()
 {
   settmp
   setlogs
-  lock
   if [ "$FTPUPLOAD" == "yes" ]; then
     echo "FTPUPLOAD enabled"
     export CLOUDFILES_USERNAME="$TENANT_NAME.$USER_NAME"
@@ -184,14 +209,20 @@ check()
 {
   setlogs
   #checking for log file updates(make sure cron is run every day)
-  fresh_backup_count=`find ${OGDIR}/* -mtime -${CRON_MTIME}|wc -l`
+  fresh_backup_count=`find ${LOGDIR}/* -mtime -${CRON_MTIME}|wc -l`
   if [[ "$fresh_backup_count" -le "0" ]]; then echo "Managed backup is CRITICAL. Fresh log file not found"; exit 2; fi
   
   #check for FTPUPLOAD(should be enabled on 413 errors)
-  request_entiti=`grep '413 Request Entity Too Large' ${LOG}|cut -d '-' -f 1`
+  request_entiti=`grep -c '413 Request Entity Too Large' ${LOG}`
   if [[ "$request_entiti" -gt 0 ]]; then
      if [ "$FTPUPLOAD" == "no" ]; then
       echo "Managed backup is CRITICAL. Request Entity Too Large, change FTPUPLOAD param to yes"; exit 2;
+    fi
+  fi
+  bigsignatures=`find ${ARCHDIR}/* -size +4700M | wc -l`
+  if [[ "$bigsignatures" -gt 0 ]]; then
+     if [ "$FTPUPLOAD" == "no" ]; then
+      echo "WARNING. Signatures files size is close to critical, change FTPUPLOAD param to yes"; exit 1;
     fi
   fi
   
@@ -201,13 +232,18 @@ check()
   if [[ "$auth_error" -gt 0 ]]; then
     echo "Managed backup is CRITICAL. Authentication Failed. Check and test credentials, schedule monitoring till the next day"; exit 2;
   fi
-  #stupid error message
-#  for i in `ls /home/logs/backup/`; do
-#    ecount=`grep 'Errors' /home/logs/backup/${i}|cut -d ' ' -f 2`
-#    if [[ $ecount -gt 0 ]]; then echo "Managed backup is CRITICAL. Check logfile /home/logs/backup/${i}"; exit 1; fi
-#  done
 
+  #check for last full backup
+  lastfull_none=$(grep $(date +%Y-%m-%d) ${LOG}|grep 'Last full backup date: none'|wc -l)
+  if [[ "$lastfull_none" -gt 0 ]]; then
+    echo "WARNING. No full backups. Check logs"; exit 1;
+  fi
 
+  #check for restarting
+  restarted_job=$(grep $(date +%Y-%m-%d) ${LOG}|grep 'Restarting backup at volume'|wc -l)
+  if [[ "$restarted_job" -gt 0 ]]; then
+    echo "WARNING. Uploading has not been done. Check logs"; exit 1;
+  fi
 
   echo "Managed backup is OK"; exit 0;
 }
@@ -281,6 +317,44 @@ case `uname -s` in
     ;;
     
 esac
+
+#config
+ls ~/scripts/cloud_backup.conf || config_setup && echo "Config installed"
+
+}
+
+config_setup()
+#Download right config for cloud_backup based on OS and DC
+{
+
+case `uname -s` in
+  Linux)
+    wget -O /root/scripts/cloud_backup.conf_template https://noc.webzilla.com/INSTALL/scripts/cloud_backup.conf_template
+    if ( `hostname | grep -q -e '^v-.*$'` ) ; then {
+      cat /root/scripts/cloud_backup.conf_template|sed 's/CHANGEME/eu/; s/PATHTOARCH/home/'>/root/scripts/cloud_backup.conf
+    }
+    else
+      cat /root/scripts/cloud_backup.conf_template|sed 's/CHANGEME/us/; s/PATHTOARCH/home/'>/root/scripts/cloud_backup.conf
+    fi
+    rm -rf /root/scripts/cloud_backup.conf_template
+    ;;
+
+  FreeBSD)
+    fetch --no-verify-peer -o /root/scripts/cloud_backup.conf_template https://noc.webzilla.com/INSTALL/scripts/cloud_backup.conf_template
+    if ( `hostname | grep -q -e '^v-.*$'` ) ; then {
+      cat /root/scripts/cloud_backup.conf_template|sed 's/CHANGEME/eu/; s/PATHTOARCH/usr\/home/'>/root/scripts/cloud_backup.conf
+    }
+    else
+      cat /root/scripts/cloud_backup.conf_template|sed 's/CHANGEME/us/; s/PATHTOARCH/usr\/home/'>/root/scripts/cloud_backup.conf
+    fi
+    rm -rf /root/scripts/cloud_backup.conf_template
+    ;;
+
+  *)
+    echo "Couldn't detect OS"
+    ;;
+
+esac
 }
 
 container_handler()
@@ -294,7 +368,6 @@ restore()
 {
   settmp
   setlogs
-  lock
   if [ "$FTPUPLOAD" == "yes" ]; then
     echo "FTPUPLOAD enabled"
     export CLOUDFILES_USERNAME="$TENANT_NAME.$USER_NAME"
@@ -333,6 +406,15 @@ restore()
 
 }
 
+cleanup_backup()
+{
+  #function to clean data from the cloud
+  killall -9 duplicity
+  export CLOUDFILES_USERNAME="$TENANT_NAME.$USER_NAME"
+  uname -s| grep FreeBSD && lftp -e "set net:max-retries 2; rm -r $container; bye" -u $CLOUDFILES_USERNAME,$CLOUDFILES_APIKEY $CLOUDFILES_FTPHOST|awk '{system("date \"+%Y-%m-%d %H:%M:%S\"|tr -d \"\\n\"");print " "$0}' >>${LOG} 2>>${LOG} && echo "Container $container deleted"|awk '{system("date \"+%Y-%m-%d %H:%M:%S\"|tr -d \"\\n\"");print " "$0}' >>${LOG} 2>>${LOG}
+  uname -s| grep Linux && yum install -y lftp && lftp -e "set net:max-retries 2; rm -r $container; bye" -u $CLOUDFILES_USERNAME,$CLOUDFILES_APIKEY $CLOUDFILES_FTPHOST|awk '{system("date \"+%Y-%m-%d %H:%M:%S\"|tr -d \"\\n\"");print " "$0}' >>${LOG} 2>>${LOG} && echo "Container $container deleted"|awk '{system("date \"+%Y-%m-%d %H:%M:%S\"|tr -d \"\\n\"");print " "$0}' >>${LOG} 2>>${LOG}
+}
+
 case "$1" in
   backup)
     backup
@@ -356,6 +438,10 @@ case "$1" in
     
   status)
     collection_status
+    ;;
+    
+  delete)
+    cleanup_backup
     ;;
     
   *)
