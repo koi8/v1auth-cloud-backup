@@ -1,5 +1,5 @@
 #!/usr/local/bin/bash
-#version 0.2.49
+#version 0.2.50
 
 CONFIG="/root/scripts/cloud_backup.conf"
 # Read config file
@@ -95,15 +95,15 @@ echo "- **" >>/root/scripts/cloud_backup_inc.list
 
 exclude_file()
 {
-  echo "${EXLIST}" > /root/scripts/cloud_backup_exc.lst
+  echo "${EXLIST}" > /root/scripts/cloud_backup_exc.list
   
 case `uname -s` in
   Linux)
-    /bin/mount |grep "nfs\|nullfs\|bind"|grep -v "sunrpc\|nfsd"|awk '{print $3}' >> /root/scripts/cloud_backup_exc.lst
+    /bin/mount |grep "nfs\|nullfs\|bind"|grep -v "sunrpc\|nfsd"|awk '{print $3}' >> /root/scripts/cloud_backup_exc.list
   ;;
 
   FreeBSD)
-    /sbin/mount |grep "nfs\|nullfs\|bind"|grep -v "sunrpc\|nfsd"|awk '{print $3}' >> /root/scripts/cloud_backup_exc.lst
+    /sbin/mount |grep "nfs\|nullfs\|bind"|grep -v "sunrpc\|nfsd"|awk '{print $3}' >> /root/scripts/cloud_backup_exc.list
   ;;
 
   *)
