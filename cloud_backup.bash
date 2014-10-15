@@ -1,5 +1,5 @@
 #!/usr/local/bin/bash
-#version 0.2.50
+#version 0.2.51
 
 CONFIG="/root/scripts/cloud_backup.conf"
 # Read config file
@@ -122,17 +122,14 @@ usage()
   echo "  REMOVEOLDERTHEN: We will clean backups older the '$REMOVEOLDERTHEN' (days)."
   echo "  We will store only 1 incremental chain."
   echo "  VOLSIZE: We will do '${VOLSIZE}' (Mb) archives."
-  echo ""
-  echo "  FLIST: We will backup this folders:"
-  echo "$FLIST"
-  echo ""
+  echo "  We will backup all server"
   echo "  EXLIST: And exclude this folders:"
   echo "$EXLIST"
   echo ""
   echo "##########################################################################################"
   echo "BACKUP"
   echo ""
-  echo "  Change CLOUDFILES_USERNAME, CLOUDFILES_APIKEY, FLIST, EXLIST, then run"
+  echo "  Change CLOUDFILES_USERNAME, CLOUDFILES_APIKEY, EXLIST, then run"
   echo "  'cloud_backup.bash backup' - to run backup"
   echo ""
   echo "##########################################################################################"
@@ -146,6 +143,11 @@ usage()
   echo ""
   echo "  cloud_backup.bash restore full /home/koi/full_restored"
   echo "  Will be restored full copy to the folder /home/koi/full_restored"
+  echo "##########################################################################################"
+  echo "'cloud_backup.bash delete' - will remove server container from the cloud storage"
+  echo "'cloud_backup.bash status' - shows current status of the backup"
+  echo "'cloud_backup.bash list'   - shows list of backuped files"
+  echo "'cloud_backup.bash check'  - function for nrpe checks"
 }
 
 backup()
