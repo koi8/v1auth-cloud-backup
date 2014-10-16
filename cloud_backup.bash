@@ -1,10 +1,8 @@
 #!/usr/local/bin/bash
-#version 0.2.51
+#version 0.2.52
 
 CONFIG="/root/scripts/cloud_backup.conf"
 # Read config file
-REMOVEOLDINCCOUNT='1'
-CRON_MTIME='1'
 if [ ! -z "$CONFIG" -a -f "$CONFIG" ];
 then
   . $CONFIG
@@ -120,8 +118,9 @@ usage()
   echo ""
   echo "  FULLIFOLDER: We will do full backup, if the last full backup was done '$FULLIFOLDER' (days) ago."
   echo "  REMOVEOLDERTHEN: We will clean backups older the '$REMOVEOLDERTHEN' (days)."
-  echo "  We will store only 1 incremental chain."
+  echo "  REMOVEOLDINCCOUNT: We will store '${REMOVEOLDINCCOUNT}' incremental chain(s)."
   echo "  VOLSIZE: We will do '${VOLSIZE}' (Mb) archives."
+  echo "  CRON_MTIME: Check is configured for cron running every '${CRON_MTIME}' days."
   echo "  We will backup all server"
   echo "  EXLIST: And exclude this folders:"
   echo "$EXLIST"
