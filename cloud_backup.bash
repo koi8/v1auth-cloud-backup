@@ -1,5 +1,5 @@
 #!/usr/local/bin/bash
-#version 0.2.52
+#version 0.2.53
 
 CONFIG="/root/scripts/cloud_backup.conf"
 # Read config file
