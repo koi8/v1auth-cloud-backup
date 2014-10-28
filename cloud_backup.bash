@@ -361,9 +361,13 @@ esac
 
 container_handler()
 {
-  #checking container and creating it if it is not exists
+  #checking container and creating it if it is not exists for FreeBSD only. On CentOS it creates automatically.
   export CLOUDFILES_USERNAME="$TENANT_NAME.$USER_NAME"
-  uname -s| grep FreeBSD && lftp -e "set net:max-retries 2; ls $container; bye" -u $CLOUDFILES_USERNAME,$CLOUDFILES_APIKEY $CLOUDFILES_FTPHOST|awk '{system("date \"+%Y-%m-%d %H:%M:%S\"|tr -d \"\\n\"");print " "$0}' >>${LOG} 2>>${LOG} || lftp -e "set net:max-retries 2; mkdir $container; bye" -u $CLOUDFILES_USERNAME,$CLOUDFILES_APIKEY $CLOUDFILES_FTPHOST|awk '{system("date \"+%Y-%m-%d %H:%M:%S\"|tr -d \"\\n\"");print " "$0}' >>${LOG} 2>>${LOG} && echo "Container created"|awk '{system("date \"+%Y-%m-%d %H:%M:%S\"|tr -d \"\\n\"");print " "$0}' >>${LOG} 2>>${LOG}
+  if $(uname -s|grep -q FreeBSD); then
+    if ! $(lftp -e "set net:max-retries 2; ls $container; bye" -u $CLOUDFILES_USERNAME,$CLOUDFILES_APIKEY $CLOUDFILES_FTPHOST >/dev/null 2>/dev/null); then
+      lftp -e "set net:max-retries 2; mkdir $container; bye" -u $CLOUDFILES_USERNAME,$CLOUDFILES_APIKEY $CLOUDFILES_FTPHOST | awk '{system("date \"+%Y-%m-%d %H:%M:%S\"|tr -d \"\\n\"");print " "$0}' >>${LOG} 2>>${LOG}
+    fi
+  fi
 }
 
 restore()
@@ -417,6 +421,13 @@ cleanup_backup()
   uname -s| grep Linux && yum install -y lftp && lftp -e "set net:max-retries 2; rm -r $container; bye" -u $CLOUDFILES_USERNAME,$CLOUDFILES_APIKEY $CLOUDFILES_FTPHOST|awk '{system("date \"+%Y-%m-%d %H:%M:%S\"|tr -d \"\\n\"");print " "$0}' >>${LOG} 2>>${LOG} && echo "Container $container deleted"|awk '{system("date \"+%Y-%m-%d %H:%M:%S\"|tr -d \"\\n\"");print " "$0}' >>${LOG} 2>>${LOG}
 }
 
+cleanup_incomplete()
+{
+  #cleaning incomplete backup chains
+  export CLOUDFILES_USERNAME="$TENANT_NAME.$USER_NAME"
+  $DUPLY -v3 ${STATIC_OPTIONS} --force cleanup ftp://${CLOUDFILES_USERNAME}:${CLOUDFILES_APIKEY}@${CLOUDFILES_FTPHOST}/${container}
+}
+
 case "$1" in
   backup)
     backup
@@ -449,6 +460,10 @@ case "$1" in
     
   delete)
     cleanup_backup
+    ;;
+
+  cleanup)
+    cleanup_incomplete
     ;;
     
   *)
