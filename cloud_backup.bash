@@ -1,5 +1,5 @@
 #!/usr/local/bin/bash
-#version 0.2.53
+#version 0.2.54
 
 CONFIG="/root/scripts/cloud_backup.conf"
 # Read config file
@@ -147,6 +147,7 @@ usage()
   echo "'cloud_backup.bash status' - shows current status of the backup"
   echo "'cloud_backup.bash list'   - shows list of backuped files"
   echo "'cloud_backup.bash check'  - function for nrpe checks"
+  echo "'cloud_backup.bash cleanup'- cleaning incomplete backup chains"
 }
 
 backup()
