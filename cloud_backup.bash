@@ -1,5 +1,5 @@
 #!/usr/local/bin/bash
-#version 0.2.54
+#version 0.2.55
 
 CONFIG="/root/scripts/cloud_backup.conf"
 # Read config file
@@ -424,6 +424,8 @@ cleanup_backup()
 
 cleanup_incomplete()
 {
+  settmp
+  setlogs
   #cleaning incomplete backup chains
   export CLOUDFILES_USERNAME="$TENANT_NAME.$USER_NAME"
   $DUPLY -v3 ${STATIC_OPTIONS} --force cleanup ftp://${CLOUDFILES_USERNAME}:${CLOUDFILES_APIKEY}@${CLOUDFILES_FTPHOST}/${container}
