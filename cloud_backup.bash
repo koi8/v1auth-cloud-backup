@@ -1,5 +1,5 @@
 #!/usr/local/bin/bash
-#version 0.2.56
+#version 0.2.57
 
 CONFIG="/root/scripts/cloud_backup.conf"
 # Read config file
@@ -246,7 +246,13 @@ check()
   if [[ "$restarted_job" -gt 0 ]]; then
     echo "WARNING. Uploading has not been done. Check logs"; exit 1;
   fi
-
+  
+  #check for dead lock
+  ppid=$(cat "${LOCKFILE}")
+  if !(ps ax|grep -v grep|grep -q "${ppid}"); then
+    echo "Dead lock detected! Check why script crashed and remove ${LOCKFILE}"; exit 2;
+  fi
+    
   echo "Managed backup is OK"; exit 0;
 }
 
