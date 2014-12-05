@@ -1,5 +1,5 @@
 #!/usr/local/bin/bash
-#version 0.2.55
+#version 0.2.56
 
 CONFIG="/root/scripts/cloud_backup.conf"
 # Read config file
@@ -76,7 +76,7 @@ include_file()
 
 case `uname -s` in
   Linux)
-    for i in `/bin/mount|cut -d ' ' -f 1 | grep -v "swap\|devpts\|proc\|sysfs\|tmpfs" | sort | uniq`; do grep $i /etc/fstab | head -n 1 | awk '{print $2}'; done >/root/scripts/cloud_backup_inc.list
+    for i in `/bin/mount|cut -d ' ' -f 1 | grep -v "swap\|devpts\|proc\|sysfs\|tmpfs\|none" | sort | uniq`; do grep $i /etc/fstab | head -n 1 | awk '{print $2}'; done >/root/scripts/cloud_backup_inc.list
   ;;
 
   FreeBSD)
