@@ -1,5 +1,5 @@
 #!/usr/local/bin/bash
-#version 0.2.57
+#version 0.2.58
 
 CONFIG="/root/scripts/cloud_backup.conf"
 # Read config file
@@ -249,7 +249,7 @@ check()
   
   #check for dead lock
   ppid=$(cat "${LOCKFILE}")
-  if !(ps ax|grep -v grep|grep -q "${ppid}"); then
+  if !(kill -0 "${ppid}"); then
     echo "Dead lock detected! Check why script crashed and remove ${LOCKFILE}"; exit 2;
   fi
     
