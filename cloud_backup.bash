@@ -1,5 +1,5 @@
 #!/usr/local/bin/bash
-#version 0.2.58
+#version 0.2.59
 
 CONFIG="/root/scripts/cloud_backup.conf"
 # Read config file
@@ -248,9 +248,11 @@ check()
   fi
   
   #check for dead lock
-  ppid=$(cat "${LOCKFILE}")
-  if !(kill -0 "${ppid}"); then
-    echo "Dead lock detected! Check why script crashed and remove ${LOCKFILE}"; exit 2;
+  if [ -e ${LOCKFILE} ]; then
+    ppid=$(cat "${LOCKFILE}")
+    if !(kill -0 "${ppid}"); then
+      echo "Dead lock detected! Check why script crashed and remove ${LOCKFILE}"; exit 2;
+    fi
   fi
     
   echo "Managed backup is OK"; exit 0;
