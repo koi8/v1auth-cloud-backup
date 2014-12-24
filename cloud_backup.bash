@@ -1,15 +1,57 @@
 #!/usr/local/bin/bash
 #version 0.2.59
-
 CONFIG="/root/scripts/cloud_backup.conf"
+
+usage()
+{
+  echo " ALL SETTINGS ARE STORED AT cloud_backup.conf "
+  echo "CURRENT VARIABLES:"
+  echo ""
+  echo "  FULLIFOLDER: We will do full backup, if the last full backup was done '$FULLIFOLDER' (days) ago."
+  echo "  REMOVEOLDERTHEN: We will clean backups older the '$REMOVEOLDERTHEN' (days)."
+  echo "  REMOVEOLDINCCOUNT: We will store '${REMOVEOLDINCCOUNT}' incremental chain(s)."
+  echo "  VOLSIZE: We will do '${VOLSIZE}' (Mb) archives."
+  echo "  CRON_MTIME: Check is configured for cron running every '${CRON_MTIME}' days."
+  echo "  We will backup all server"
+  echo "  EXLIST: And exclude this folders:"
+  echo "$EXLIST"
+  echo ""
+  echo "##########################################################################################"
+  echo "BACKUP"
+  echo ""
+  echo "  Change CLOUDFILES_USERNAME, CLOUDFILES_APIKEY, EXLIST, then run"
+  echo "  'cloud_backup.bash backup' - to run backup"
+  echo ""
+  echo "##########################################################################################"
+  echo "RESTORE EXAMPLES"
+  echo ""
+  echo "  cloud_backup.bash restore usr/local/nginx/conf/ /home/koi/conf"
+  echo "  Folder /usr/local/nginx/conf will be restored from the cloud as /home/koi/conf folder"
+  echo ""
+  echo "  cloud_backup.bash restore -t 2D usr/test /home/koi/restored_test"
+  echo "  Will be restored copy two days ago of the file /usr/test as /home/koi/restored_test"
+  echo ""
+  echo "  cloud_backup.bash restore full /home/koi/full_restored"
+  echo "  Will be restored full copy to the folder /home/koi/full_restored"
+  echo "##########################################################################################"
+  echo "'cloud_backup.bash delete' - will remove server container from the cloud storage"
+  echo "'cloud_backup.bash status' - shows current status of the backup"
+  echo "'cloud_backup.bash list'   - shows list of backuped files"
+  echo "'cloud_backup.bash check'  - function for nrpe checks"
+  echo "'cloud_backup.bash cleanup'- cleaning incomplete backup chains"
+}
+
+
 # Read config file
 if [ ! -z "$CONFIG" -a -f "$CONFIG" ];
 then
   . $CONFIG
 else
-  echo "Errors: 1 can't find config file! (${CONFIG})" >&2
-  usage
-  exit 1
+  if [ "$1" != "install" ];
+  then
+    echo "Errors: 1 can't find config file! (${CONFIG})" >&2
+    exit 1
+  fi
 fi
 
 export PATH="/sbin:/usr/sbin:/bin:/usr/bin:/usr/local/sbin:/usr/local/bin"
@@ -111,44 +153,6 @@ esac
 
 }
 
-usage()
-{
-  echo " ALL SETTINGS ARE STORED AT cloud_backup.conf "
-  echo "CURRENT VARIABLES:"
-  echo ""
-  echo "  FULLIFOLDER: We will do full backup, if the last full backup was done '$FULLIFOLDER' (days) ago."
-  echo "  REMOVEOLDERTHEN: We will clean backups older the '$REMOVEOLDERTHEN' (days)."
-  echo "  REMOVEOLDINCCOUNT: We will store '${REMOVEOLDINCCOUNT}' incremental chain(s)."
-  echo "  VOLSIZE: We will do '${VOLSIZE}' (Mb) archives."
-  echo "  CRON_MTIME: Check is configured for cron running every '${CRON_MTIME}' days."
-  echo "  We will backup all server"
-  echo "  EXLIST: And exclude this folders:"
-  echo "$EXLIST"
-  echo ""
-  echo "##########################################################################################"
-  echo "BACKUP"
-  echo ""
-  echo "  Change CLOUDFILES_USERNAME, CLOUDFILES_APIKEY, EXLIST, then run"
-  echo "  'cloud_backup.bash backup' - to run backup"
-  echo ""
-  echo "##########################################################################################"
-  echo "RESTORE EXAMPLES"
-  echo ""
-  echo "  cloud_backup.bash restore usr/local/nginx/conf/ /home/koi/conf"
-  echo "  Folder /usr/local/nginx/conf will be restored from the cloud as /home/koi/conf folder"
-  echo ""
-  echo "  cloud_backup.bash restore -t 2D usr/test /home/koi/restored_test"
-  echo "  Will be restored copy two days ago of the file /usr/test as /home/koi/restored_test"
-  echo ""
-  echo "  cloud_backup.bash restore full /home/koi/full_restored"
-  echo "  Will be restored full copy to the folder /home/koi/full_restored"
-  echo "##########################################################################################"
-  echo "'cloud_backup.bash delete' - will remove server container from the cloud storage"
-  echo "'cloud_backup.bash status' - shows current status of the backup"
-  echo "'cloud_backup.bash list'   - shows list of backuped files"
-  echo "'cloud_backup.bash check'  - function for nrpe checks"
-  echo "'cloud_backup.bash cleanup'- cleaning incomplete backup chains"
-}
 
 backup()
 {
@@ -303,7 +307,6 @@ clb_install()
 {
 case `uname -s` in
   Linux)
-    echo "It's Linux"
     chmod +x ~/scripts/cloud_backup.bash
     #nrpe
     [ -e /usr/lib64/nagios/plugins/cloud_backup.bash ] || ln -s /root/scripts/cloud_backup.bash /usr/lib64/nagios/plugins/cloud_backup.bash && echo "Symlink /usr/lib64/nagios/plugins/cloud_backup.bash created"
@@ -313,7 +316,31 @@ case `uname -s` in
     ;;
     
   FreeBSD)
-    echo "It's FreeBSD"
+    #installing packages with pkgng
+    pkg install -y popt libevent2 expat
+    pkg install -y librsync trickle lftp
+    pkg install -y ncftp
+    pkg install -y python27
+    pkg install -y py27-setuptools27
+    pkg install -y py27-lockfile
+    
+    #Installing python cloudfiles
+    mkdir -p /usr/local/src
+    chown root:wheel /usr/local/src
+    chmod 700 /usr/local/src
+    fetch --no-verify-peer -o /usr/local/src/python-cloudfiles.tar.gz https://noc.webzilla.com/INSTALL/src/python-cloudfiles.tar.gz
+    cd /usr/local/src/
+    tar -xvzf python-cloudfiles.tar.gz
+    cd python-cloudfiles
+    /usr/local/bin/python2.7 setup.py install 1>>/root/cloud_backup_installation.log 2>>/root/cloud_backup_installation.log
+    
+    #Installing duplicity
+    fetch --no-verify-peer -o /usr/local/src/duplicity-0.6.25.tar.gz https://code.launchpad.net/duplicity/0.6-series/0.6.25/+download/duplicity-0.6.25.tar.gz
+    cd /usr/local/src/
+    tar -xvzf duplicity-0.6.25.tar.gz
+    cd duplicity-0.6.25
+    /usr/local/bin/python2.7 setup.py install --librsync-dir=/usr/local/ >>/root/cloud_backup_installation.log 2>>/root/cloud_backup_installation.log
+    
     chmod +x ~/scripts/cloud_backup.bash
     #nrpe
     [ -e /usr/local/libexec/nagios/cloud_backup.bash ] || ln -s /root/scripts/cloud_backup.bash /usr/local/libexec/nagios/cloud_backup.bash && echo "Creating symlink /usr/local/libexec/nagios/cloud_backup.bash"
@@ -321,15 +348,21 @@ case `uname -s` in
     #cron
     crontab -l|grep -q "cloud_backup.bash backup" || cron_install freebsd && echo "Cron added"
     ;;
+
+  Darwin)
+    echo "OS X not supported"    
+    exit 1
+    ;;
     
   *)
     echo "Couldn't detect OS"
+    exit 1
     ;;
     
 esac
 
 #config
-ls ~/scripts/cloud_backup.conf || config_setup && echo "Config installed"
+ls ~/scripts/cloud_backup.conf || config_setup && echo "Config installed, fill in credentials"
 
 }
 
@@ -462,7 +495,6 @@ case "$1" in
     
   update)
     clb_install
-    config_setup
     ;;
 
   status)
