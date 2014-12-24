@@ -456,6 +456,8 @@ restore()
 
 cleanup_backup()
 {
+  settmp
+  setlogs
   #function to clean data from the cloud
   killall -9 duplicity
   export CLOUDFILES_USERNAME="$TENANT_NAME.$USER_NAME"
