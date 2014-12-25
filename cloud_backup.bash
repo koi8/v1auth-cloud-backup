@@ -307,7 +307,11 @@ clb_install()
 {
 case `uname -s` in
   Linux)
-    chmod +x ~/scripts/cloud_backup.bash
+    #installing packages from yum
+    yum install -y python-cloudfiles duplicity trickle python-lockfile rpl
+    chmod 755 /root/scripts/cloud_backup.bash
+    rpl -e '#!/usr/local/bin/bash' '#!/bin/bash' /root/scripts/cloud_backup.bash
+    
     #nrpe
     [ -e /usr/lib64/nagios/plugins/cloud_backup.bash ] || ln -s /root/scripts/cloud_backup.bash /usr/lib64/nagios/plugins/cloud_backup.bash && echo "Symlink /usr/lib64/nagios/plugins/cloud_backup.bash created"
     grep -q 'check_managed_backup' /etc/nagios/nrpe.cfg || echo "command[check_managed_backup]=/usr/lib64/nagios/plugins/cloud_backup.bash check" >> /etc/nagios/nrpe.cfg && /sbin/service nrpe restart && echo "NRPE command installed"
@@ -325,6 +329,7 @@ case `uname -s` in
     pkg install -y py27-lockfile
     
     #Installing python cloudfiles
+    mkdir /usr/home/tmp
     mkdir -p /usr/local/src
     chown root:wheel /usr/local/src
     chmod 700 /usr/local/src
@@ -341,7 +346,7 @@ case `uname -s` in
     cd duplicity-0.6.25
     /usr/local/bin/python2.7 setup.py install --librsync-dir=/usr/local/ >>/root/cloud_backup_installation.log 2>>/root/cloud_backup_installation.log
     
-    chmod +x ~/scripts/cloud_backup.bash
+    chmod 755 /root/scripts/cloud_backup.bash
     #nrpe
     [ -e /usr/local/libexec/nagios/cloud_backup.bash ] || ln -s /root/scripts/cloud_backup.bash /usr/local/libexec/nagios/cloud_backup.bash && echo "Creating symlink /usr/local/libexec/nagios/cloud_backup.bash"
     grep -q 'check_managed_backup' /usr/local/etc/nrpe.cfg || echo "command[check_managed_backup]=/usr/local/libexec/nagios/cloud_backup.bash check" >> /usr/local/etc/nrpe.cfg && /usr/local/etc/rc.d/nrpe2 restart && echo "NRPE command installed"
