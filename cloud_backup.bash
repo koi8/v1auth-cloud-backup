@@ -1,5 +1,5 @@
 #!/usr/local/bin/bash
-#version 0.2.59
+#version 0.2.60
 CONFIG="/root/scripts/cloud_backup.conf"
 
 usage()
@@ -82,6 +82,7 @@ lock()
       echo "lock held by $(cat ${LOCKFILE})" | tee -a ${LOG} >&2
       exit 2
   fi
+  rm -rf ${ARCHDIR}/*/lockfile.lock
 }
 
 include_exclude()
