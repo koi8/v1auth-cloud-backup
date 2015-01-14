@@ -428,8 +428,15 @@ cleanup_backup()
   #function to clean data from the cloud
   killall -9 duplicity
   export CLOUDFILES_USERNAME="$TENANT_NAME.$USER_NAME"
-  uname -s| grep FreeBSD && lftp -e "set net:max-retries 2; rm -r $container; bye" -u $CLOUDFILES_USERNAME,$CLOUDFILES_APIKEY $CLOUDFILES_FTPHOST|awk '{system("date \"+%Y-%m-%d %H:%M:%S\"|tr -d \"\\n\"");print " "$0}' >>${LOG} 2>>${LOG} && echo "Container $container deleted"|awk '{system("date \"+%Y-%m-%d %H:%M:%S\"|tr -d \"\\n\"");print " "$0}' >>${LOG} 2>>${LOG}
-  uname -s| grep Linux && yum install -y lftp && lftp -e "set net:max-retries 2; rm -r $container; bye" -u $CLOUDFILES_USERNAME,$CLOUDFILES_APIKEY $CLOUDFILES_FTPHOST|awk '{system("date \"+%Y-%m-%d %H:%M:%S\"|tr -d \"\\n\"");print " "$0}' >>${LOG} 2>>${LOG} && echo "Container $container deleted"|awk '{system("date \"+%Y-%m-%d %H:%M:%S\"|tr -d \"\\n\"");print " "$0}' >>${LOG} 2>>${LOG}
+  if [[ $OSTYPE == freebsd* ]]; then
+      lftp -e "set net:max-retries 2; rm -r $container; bye" -u $CLOUDFILES_USERNAME,$CLOUDFILES_APIKEY $CLOUDFILES_FTPHOST|awk '{system("date \"+%Y-%m-%d %H:%M:%S\"|tr -d \"\\n\"");print " "$0}' >>${LOG} 2>>${LOG} && echo "Container $container deleted"|awk '{system("date \"+%Y-%m-%d %H:%M:%S\"|tr -d \"\\n\"");print " "$0}' >>${LOG} 2>>${LOG}
+
+  elif [[ -f /etc/redhat-release ]]; then
+      yum list installed |grep -w lftp > /dev/null 2>&1 || yum install lftp -y > /dev/null 2>&1 && lftp -e "set net:max-retries 2; rm -r $container; bye" -u $CLOUDFILES_USERNAME,$CLOUDFILES_APIKEY $CLOUDFILES_FTPHOST|awk '{system("date \"+%Y-%m-%d %H:%M:%S\"|tr -d \"\\n\"");print " "$0}' >>${LOG} 2>>${LOG} && echo "Container $container deleted"|awk '{system("date \"+%Y-%m-%d %H:%M:%S\"|tr -d \"\\n\"");print " "$0}' >>${LOG} 2>>${LOG}
+
+  elif [[ -f /etc/debian_version ]]; then
+      aptitude show lftp |grep -w lftp > /dev/null 2>&1 || apt-get install -y lftp > /dev/null 2>&1 && lftp -e "set net:max-retries 2; rm -r $container; bye" -u $CLOUDFILES_USERNAME,$CLOUDFILES_APIKEY $CLOUDFILES_FTPHOST|awk '{system("date \"+%Y-%m-%d %H:%M:%S\"|tr -d \"\\n\"");print " "$0}' >>${LOG} 2>>${LOG} && echo "Container $container deleted"|awk '{system("date \"+%Y-%m-%d %H:%M:%S\"|tr -d \"\\n\"");print " "$0}' >>${LOG} 2>>${LOG}
+  fi
 }
 
 cleanup_incomplete()
