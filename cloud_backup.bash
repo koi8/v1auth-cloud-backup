@@ -1,5 +1,5 @@
 #!/usr/local/bin/bash
-#version 0.2.60
+#version 0.2.62
 CONFIG="/root/scripts/cloud_backup.conf"
 
 usage()
@@ -102,7 +102,7 @@ include_exclude()
   done
   
 #excluding all nfs and nullfs(bind) mounts
-  MOUNTS=`mount|grep "nfs\|nullfs\|bind"|grep -v "sunrpc\|nfsd"|awk '{print $3}'`
+  MOUNTS=`mount|grep "nfs\|nullfs\|bind"|grep -v "sunrpc\|nfsd\|nfsv4acls"|awk '{print $3}'`
   for mount in ${MOUNTS}
       do
       TMP=" --exclude "${mount}
