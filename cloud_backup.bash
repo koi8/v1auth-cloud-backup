@@ -1,5 +1,5 @@
 #!/usr/local/bin/bash
-#version 0.2.62
+#version 0.2.63
 CONFIG="/root/scripts/cloud_backup.conf"
 
 usage()
@@ -378,7 +378,7 @@ config_setup()
 
 case `uname -s` in
   Linux)
-    wget -O /root/scripts/cloud_backup.conf_template https://noc.webzilla.com/INSTALL/scripts/cloud_backup.conf_template
+    wget --no-check-certificate -O /root/scripts/cloud_backup.conf_template https://noc.webzilla.com/INSTALL/scripts/cloud_backup.conf_template
     if ( `hostname | grep -q -e '^v-.*$'` ) ; then {
       cat /root/scripts/cloud_backup.conf_template|sed 's/CHANGEME/eu/; s/PATHTOARCH/home/'>/root/scripts/cloud_backup.conf
     }
