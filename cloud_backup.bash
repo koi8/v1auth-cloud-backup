@@ -1,5 +1,5 @@
 #!/usr/local/bin/bash
-#version 0.2.67
+#version 0.2.68
 CONFIG="/root/scripts/cloud_backup.conf"
 
 usage()
@@ -292,18 +292,18 @@ check()
 check_full_date()
 {
   number=$(echo "$FULLIFOLDER"| sed 's/[A-Za-z]*//g')
-  check_month1=$(date "+%B")
+  check_month1=$(date "+%b")
   last_full_month=$(cat /root/scripts/cloud_backup_status |grep full|cut -d ':' -f 2|awk '{print $2}')
   
   case `uname -s` in
   
     FreeBSD)
       if $(echo "$FULLIFOLDER"|grep -q 'D'); then
-        check_month2=$(date -r $(echo "`date +%s` - (${number} * 24 * 60 * 60)" |bc) "+%B")
+        check_month2=$(date -r $(echo "`date +%s` - (${number} * 24 * 60 * 60)" |bc) "+%b")
       fi
   
       if $(echo "$FULLIFOLDER"|grep -q 'M'); then
-        check_month2=$(date -r $(echo "`date +%s` - (${number} * 30 * 24 * 60 * 60)" |bc) "+%B")
+        check_month2=$(date -r $(echo "`date +%s` - (${number} * 30 * 24 * 60 * 60)" |bc) "+%b")
       fi
       ;;
       
