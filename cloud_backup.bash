@@ -287,7 +287,7 @@ check_full_date()
       ;;
     
     *)
-      echo "Last full day to old, was made in $last_full_month. It is not in current($check_month1) or last ($check_month2) month! Something wrong here!"; exit 2;
+      echo "Last full backup date to old, was made in $last_full_month. It is not in current($check_month1) or last ($check_month2) month! Something wrong here!"; exit 2;
       ;;
       
     esac
