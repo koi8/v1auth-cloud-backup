@@ -1,5 +1,5 @@
 #!/usr/local/bin/bash
-#version 0.2.63
+#version 0.2.65
 CONFIG="/root/scripts/cloud_backup.conf"
 
 usage()
@@ -193,7 +193,7 @@ backup()
     #REMOVE OLD INCREMENTAL CHAINS
     $DUPLY remove-all-inc-of-but-n-full $REMOVEOLDINCCOUNT --force ${STATIC_OPTIONS} cf+http://${container} | awk '{system("date \"+%Y-%m-%d %H:%M:%S\"|tr -d \"\\n\"");print " "$0}' >>${LOG} 2>>${LOG}
   fi
-
+  collection_status >/root/scripts/cloud_backup_status 2>/root/scripts/cloud_backup_status
 
 }
 
@@ -259,8 +259,38 @@ check()
       echo "Dead lock detected! Check why script crashed and remove ${LOCKFILE}"; exit 2;
     fi
   fi
+  
+  check_full_date
     
   echo "Managed backup is OK"; exit 0;
+}
+
+check_full_date()
+{
+  number=$(echo "$FULLIFOLDER"| sed 's/[A-Za-z]*//g')
+  check_month1=$(date "+%B")
+  last_full_month=$(cat /root/scripts/cloud_backup_status |grep full|cut -d ':' -f 2|awk '{print $2}')
+  
+  if $(echo "$FULLIFOLDER"|grep -q 'D'); then
+    check_month2=$(date -r $(echo "`date +%s` - (${number} * 24 * 60 * 60)" |bc) "+%B")
+  fi
+  
+  if $(echo "$FULLIFOLDER"|grep -q 'M'); then
+    check_month2=$(date -r $(echo "`date +%s` - (${number} * 30 * 24 * 60 * 60)" |bc) "+%B")
+  fi
+  
+  case "$last_full_month" in
+    "$check_month1")
+      ;;
+    
+    "$check_month2")
+      ;;
+    
+    *)
+      echo "Last full day to old, was made in $last_full_month . It is not in $check_month1 or $check_month2 ) ! Something wrong here!"; exit 2;
+      ;;
+      
+    esac
 }
 
 collection_status()
@@ -302,6 +332,19 @@ case "$1" in
     ;;
 esac
 
+}
+
+update()
+{
+case `uname -s` in
+  Linux)
+    chmod 755 /root/scripts/cloud_backup.bash
+    rpl -e '#!/usr/local/bin/bash' '#!/bin/bash' /root/scripts/cloud_backup.bash
+    ;;
+    
+  *)
+  ;;
+esac
 }
 
 clb_install()
@@ -487,6 +530,8 @@ cleanup_incomplete()
   $DUPLY -v3 ${STATIC_OPTIONS} --force cleanup ftp://${CLOUDFILES_USERNAME}:${CLOUDFILES_APIKEY}@${CLOUDFILES_FTPHOST}/${container}
 }
 
+
+
 case "$1" in
   backup)
     backup
@@ -509,7 +554,7 @@ case "$1" in
     ;;
     
   update)
-    clb_install
+    update
     ;;
 
   status)
