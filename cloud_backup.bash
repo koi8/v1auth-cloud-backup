@@ -57,6 +57,28 @@ fi
 export PATH="/sbin:/usr/sbin:/bin:/usr/bin:/usr/local/sbin:/usr/local/bin"
 DUPLY=`which duplicity`
 
+nice_setup() 
+{
+case `uname -s` in
+  Linux)
+  NICE=`which nice` 
+  IONICE=`which ionice` 
+  DUPLICITY=`which duplicity` 
+  DUPLY="$NICE -n 19 $IONICE -c 3 $DUPLICITY"
+  ;;
+
+  FreeBSD)
+  NICE=`which nice` 
+  IONICE=`which idprio` 
+  DUPLICITY=`which duplicity` 
+  DUPLY="$NICE -n 20 $IONICE 31 $DUPLICITY"
+  ;;
+
+  *)
+    echo "Couldn't detect OS"
+  ;;
+esac
+}
 
 settmp()
 {
@@ -160,6 +182,7 @@ backup()
   settmp
   setlogs
   lock
+  nice_setup
   include_exclude
   include_file
   exclude_file
@@ -201,6 +224,7 @@ list()
 {
   settmp
   setlogs
+  nice_setup
   if [ "$FTPUPLOAD" == "yes" ]; then
     echo "FTPUPLOAD enabled"
     export CLOUDFILES_USERNAME="$TENANT_NAME.$USER_NAME"
@@ -307,6 +331,7 @@ collection_status()
 {   
   settmp
   setlogs
+  nice_setup
   #lock
   if [ "$FTPUPLOAD" == "yes" ]; then
     export CLOUDFILES_USERNAME="$TENANT_NAME.$USER_NAME"
@@ -475,6 +500,7 @@ restore()
 {
   settmp
   setlogs
+  nice_setup
   if [ "$FTPUPLOAD" == "yes" ]; then
     echo "FTPUPLOAD enabled"
     export CLOUDFILES_USERNAME="$TENANT_NAME.$USER_NAME"
@@ -535,6 +561,7 @@ cleanup_incomplete()
 {
   settmp
   setlogs
+  nice_setup
   #cleaning incomplete backup chains
   export CLOUDFILES_USERNAME="$TENANT_NAME.$USER_NAME"
   $DUPLY -v3 ${STATIC_OPTIONS} --force cleanup ftp://${CLOUDFILES_USERNAME}:${CLOUDFILES_APIKEY}@${CLOUDFILES_FTPHOST}/${container}
