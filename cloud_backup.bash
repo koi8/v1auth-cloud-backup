@@ -346,15 +346,15 @@ esac
 
 update()
 {
-case `uname -s` in
-  Linux)
-    chmod 755 /root/scripts/cloud_backup.bash
-    rpl -e '#!/usr/local/bin/bash' '#!/bin/bash' /root/scripts/cloud_backup.bash
-    ;;
+  chmod 755 /root/scripts/cloud_backup.bash
+  case `uname -s` in
+    Linux)
+      rpl -e '#!/usr/local/bin/bash' '#!/bin/bash' /root/scripts/cloud_backup.bash
+      ;;
     
-  *)
-  ;;
-esac
+    *)
+    ;;
+  esac
 }
 
 clb_install()
