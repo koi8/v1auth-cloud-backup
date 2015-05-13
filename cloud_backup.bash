@@ -1,5 +1,5 @@
 #!/usr/local/bin/bash
-#version 0.2.65
+#version 0.2.66
 CONFIG="/root/scripts/cloud_backup.conf"
 
 usage()
@@ -287,7 +287,7 @@ check_full_date()
       ;;
     
     *)
-      echo "Last full day to old, was made in $last_full_month . It is not in $check_month1 or $check_month2 ) ! Something wrong here!"; exit 2;
+      echo "Last full day to old, was made in $last_full_month. It is not in current($check_month1) or last ($check_month2) month! Something wrong here!"; exit 2;
       ;;
       
     esac
