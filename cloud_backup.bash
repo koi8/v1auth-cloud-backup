@@ -1,5 +1,5 @@
 #!/usr/local/bin/bash
-#version 0.2.68
+#version 0.2.70
 CONFIG="/root/scripts/cloud_backup.conf"
 
 usage()
@@ -240,12 +240,6 @@ check()
     echo "Managed backup is CRITICAL. Authentication Failed. Check and test credentials, schedule monitoring till the next day"; exit 2;
   fi
 
-  #check for last full backup
-  lastfull_none=$(grep $(date +%Y-%m-%d) ${LOG}|grep 'Last full backup date: none'|wc -l)
-  if [[ "$lastfull_none" -gt 0 ]]; then
-    echo "WARNING. No full backups. Check logs"; exit 1;
-  fi
-
   #check for restarting
   restarted_job=$(grep $(date +%Y-%m-%d) ${LOG}|grep 'Restarting backup at volume'|wc -l)
   if [[ "$restarted_job" -gt 0 ]]; then
@@ -268,23 +262,23 @@ check()
 check_full_date()
 {
   number=$(echo "$FULLIFOLDER"| sed 's/[A-Za-z]*//g')
-  check_month1=$(date "+%b")
+  check_month1=$(date "+%b"| cut -c -3)
   last_full_month=$(cat /root/scripts/cloud_backup_status |grep full|cut -d ':' -f 2|awk '{print $2}')
   
   case `uname -s` in
   
     FreeBSD)
       if $(echo "$FULLIFOLDER"|grep -q 'D'); then
-        check_month2=$(date -r $(echo "`date +%s` - (${number} * 24 * 60 * 60)" |bc) "+%b")
+        check_month2=$(date -r $(echo "`date +%s` - (${number} * 24 * 60 * 60)" |bc) "+%b"| cut -c -3)
       fi
   
       if $(echo "$FULLIFOLDER"|grep -q 'M'); then
-        check_month2=$(date -r $(echo "`date +%s` - (${number} * 30 * 24 * 60 * 60)" |bc) "+%b")
+        check_month2=$(date -r $(echo "`date +%s` - (${number} * 30 * 24 * 60 * 60)" |bc) "+%b"| cut -c -3)
       fi
       ;;
       
     Linux)
-      check_month2=$(date +'%b' -d "-${number} days")
+      check_month2=$(date +'%b' -d "-${number} days"| cut -c -3)
       ;;
   
   esac
