@@ -1,5 +1,5 @@
 #!/usr/local/bin/bash
-#version 0.2.72
+#version 0.2.73
 CONFIG="/root/scripts/cloud_backup.conf"
 
 usage()
@@ -530,7 +530,6 @@ cleanup_incomplete()
   export CLOUDFILES_USERNAME="$TENANT_NAME.$USER_NAME"
   $DUPLY -v3 ${STATIC_OPTIONS} --force cleanup ftp://${CLOUDFILES_USERNAME}@${CLOUDFILES_FTPHOST}/${container}
 }
-
 
 
 case "$1" in
