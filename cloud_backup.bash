@@ -1,5 +1,5 @@
 #!/usr/local/bin/bash
-#version 0.2.70
+#version 0.2.72
 CONFIG="/root/scripts/cloud_backup.conf"
 
 usage()
@@ -167,24 +167,17 @@ backup()
   if [ "$FTPUPLOAD" == "yes" ]; then
   echo "FTPUPLOAD enabled"
     export CLOUDFILES_USERNAME="$TENANT_NAME.$USER_NAME"
-    #old string to backup
-#    $DUPLY -v3 --full-if-older-than ${FULLIFOLDER} --volsize ${VOLSIZE} --asynchronous-upload ${STATIC_OPTIONS} ${EXCLUDE} ${INCLUDE} / ftp://${CLOUDFILES_USERNAME}:${CLOUDFILES_APIKEY}@${CLOUDFILES_FTPHOST}/${container} | awk '{system("date \"+%Y-%m-%d %H:%M:%S\"|tr -d \"\\n\"");print " "$0}' >>${LOG} 2>>${LOG}
-
-    #new string to backup
-    $DUPLY -v3 --full-if-older-than ${FULLIFOLDER} --volsize ${VOLSIZE} --asynchronous-upload ${STATIC_OPTIONS} --exclude-globbing-filelist /root/scripts/cloud_backup_exc.list --include-globbing-filelist /root/scripts/cloud_backup_inc.list / ftp://${CLOUDFILES_USERNAME}:${CLOUDFILES_APIKEY}@${CLOUDFILES_FTPHOST}/${container} | awk '{system("date \"+%Y-%m-%d %H:%M:%S\"|tr -d \"\\n\"");print " "$0}' >>${LOG} 2>>${LOG}
+    export FTP_PASSWORD="${CLOUDFILES_APIKEY}"
+    $DUPLY -v3 --full-if-older-than ${FULLIFOLDER} --volsize ${VOLSIZE} --asynchronous-upload ${STATIC_OPTIONS} --exclude-globbing-filelist /root/scripts/cloud_backup_exc.list --include-globbing-filelist /root/scripts/cloud_backup_inc.list / ftp://${CLOUDFILES_USERNAME}@${CLOUDFILES_FTPHOST}/${container} | awk '{system("date \"+%Y-%m-%d %H:%M:%S\"|tr -d \"\\n\"");print " "$0}' >>${LOG} 2>>${LOG}
 
     #CLEANUP all old backups older then 14 days
     echo "cleaning up:" | awk '{system("date \"+%Y-%m-%d %H:%M:%S\"|tr -d \"\\n\"");print " "$0}' >>${LOG} 2>>${LOG}
-    $DUPLY remove-older-than ${REMOVEOLDERTHEN} --force ${STATIC_OPTIONS} ftp://${CLOUDFILES_USERNAME}:${CLOUDFILES_APIKEY}@${CLOUDFILES_FTPHOST}/${container} | awk '{system("date \"+%Y-%m-%d %H:%M:%S\"|tr -d \"\\n\"");print " "$0}' >>${LOG} 2>>${LOG}
+    $DUPLY remove-older-than ${REMOVEOLDERTHEN} --force ${STATIC_OPTIONS} ftp://${CLOUDFILES_USERNAME}@${CLOUDFILES_FTPHOST}/${container} | awk '{system("date \"+%Y-%m-%d %H:%M:%S\"|tr -d \"\\n\"");print " "$0}' >>${LOG} 2>>${LOG}
     #REMOVE OLD INCREMENTAL CHAINS
-    $DUPLY remove-all-inc-of-but-n-full $REMOVEOLDINCCOUNT --force ${STATIC_OPTIONS} ftp://${CLOUDFILES_USERNAME}:${CLOUDFILES_APIKEY}@${CLOUDFILES_FTPHOST}/${container} | awk '{system("date \"+%Y-%m-%d %H:%M:%S\"|tr -d \"\\n\"");print " "$0}' >>${LOG} 2>>${LOG}
+    $DUPLY remove-all-inc-of-but-n-full $REMOVEOLDINCCOUNT --force ${STATIC_OPTIONS} ftp://${CLOUDFILES_USERNAME}@${CLOUDFILES_FTPHOST}/${container} | awk '{system("date \"+%Y-%m-%d %H:%M:%S\"|tr -d \"\\n\"");print " "$0}' >>${LOG} 2>>${LOG}
   else
   echo "FTPUPLOAD disabled"
     export CLOUDFILES_USERNAME="$TENANT_NAME:$USER_NAME"
-    #old string to backup
-#    $DUPLY -v3 --full-if-older-than ${FULLIFOLDER} --volsize ${VOLSIZE} --asynchronous-upload ${STATIC_OPTIONS} ${EXCLUDE} ${INCLUDE} / cf+http://${container} | awk '{system("date \"+%Y-%m-%d %H:%M:%S\"|tr -d \"\\n\"");print " "$0}' >>${LOG} 2>>${LOG}  
-
-    #new string to backup
     $DUPLY -v3 --full-if-older-than ${FULLIFOLDER} --volsize ${VOLSIZE} --asynchronous-upload ${STATIC_OPTIONS} --exclude-globbing-filelist /root/scripts/cloud_backup_exc.list --include-globbing-filelist /root/scripts/cloud_backup_inc.list / cf+http://${container} | awk '{system("date \"+%Y-%m-%d %H:%M:%S\"|tr -d \"\\n\"");print " "$0}' >>${LOG} 2>>${LOG}  
 
     #CLEANUP all old backups older then 14 days
@@ -204,7 +197,8 @@ list()
   if [ "$FTPUPLOAD" == "yes" ]; then
     echo "FTPUPLOAD enabled"
     export CLOUDFILES_USERNAME="$TENANT_NAME.$USER_NAME"
-    $DUPLY list-current-files ${STATIC_OPTIONS} ftp://${CLOUDFILES_USERNAME}:${CLOUDFILES_APIKEY}@${CLOUDFILES_FTPHOST}/${container}
+    export FTP_PASSWORD="${CLOUDFILES_APIKEY}"
+    $DUPLY list-current-files ${STATIC_OPTIONS} ftp://${CLOUDFILES_USERNAME}@${CLOUDFILES_FTPHOST}/${container}
   else
     echo "FTPUPLOAD disabled"
     export CLOUDFILES_USERNAME="$TENANT_NAME:$USER_NAME"
@@ -304,7 +298,8 @@ collection_status()
   #lock
   if [ "$FTPUPLOAD" == "yes" ]; then
     export CLOUDFILES_USERNAME="$TENANT_NAME.$USER_NAME"
-    $DUPLY collection-status ${STATIC_OPTIONS} ftp://${CLOUDFILES_USERNAME}:${CLOUDFILES_APIKEY}@${CLOUDFILES_FTPHOST}/${container}
+    export FTP_PASSWORD="${CLOUDFILES_APIKEY}"
+    $DUPLY collection-status ${STATIC_OPTIONS} ftp://${CLOUDFILES_USERNAME}@${CLOUDFILES_FTPHOST}/${container}
   else  
     export CLOUDFILES_USERNAME="$TENANT_NAME:$USER_NAME"
     $DUPLY collection-status ${STATIC_OPTIONS} cf+http://${container}
@@ -472,19 +467,20 @@ restore()
   if [ "$FTPUPLOAD" == "yes" ]; then
     echo "FTPUPLOAD enabled"
     export CLOUDFILES_USERNAME="$TENANT_NAME.$USER_NAME"
+    export FTP_PASSWORD="${CLOUDFILES_APIKEY}"
     case "$2" in
       -t)
-        $DUPLY ${STATIC_OPTIONS} -t $3 --file-to-restore=$4 ftp://${CLOUDFILES_USERNAME}:${CLOUDFILES_APIKEY}@${CLOUDFILES_FTPHOST}/${container} $5
+        $DUPLY ${STATIC_OPTIONS} -t $3 --file-to-restore=$4 ftp://${CLOUDFILES_USERNAME}@${CLOUDFILES_FTPHOST}/${container} $5
         ;;
     
       full)
-        $DUPLY ${STATIC_OPTIONS} ftp://${CLOUDFILES_USERNAME}:${CLOUDFILES_APIKEY}@${CLOUDFILES_FTPHOST}/${container} $3
+        $DUPLY ${STATIC_OPTIONS} ftp://${CLOUDFILES_USERNAME}@${CLOUDFILES_FTPHOST}/${container} $3
         ;;
     
       *)
-        $DUPLY ${STATIC_OPTIONS} --file-to-restore=$2 ftp://${CLOUDFILES_USERNAME}:${CLOUDFILES_APIKEY}@${CLOUDFILES_FTPHOST}/${container} $3
+        $DUPLY ${STATIC_OPTIONS} --file-to-restore=$2 ftp://${CLOUDFILES_USERNAME}@${CLOUDFILES_FTPHOST}/${container} $3
 
-   esac
+    esac
   
   else
     echo "FTP disabled"
@@ -530,8 +526,9 @@ cleanup_incomplete()
   settmp
   setlogs
   #cleaning incomplete backup chains
+  export FTP_PASSWORD="${CLOUDFILES_APIKEY}"
   export CLOUDFILES_USERNAME="$TENANT_NAME.$USER_NAME"
-  $DUPLY -v3 ${STATIC_OPTIONS} --force cleanup ftp://${CLOUDFILES_USERNAME}:${CLOUDFILES_APIKEY}@${CLOUDFILES_FTPHOST}/${container}
+  $DUPLY -v3 ${STATIC_OPTIONS} --force cleanup ftp://${CLOUDFILES_USERNAME}@${CLOUDFILES_FTPHOST}/${container}
 }
 
 
@@ -579,6 +576,7 @@ case "$1" in
     
 esac
 
+unset FTP_PASSWORD
 unset CLOUDFILES_USERNAME
 unset CLOUDFILES_APIKEY
 unset CLOUDFILES_AUTHURL
