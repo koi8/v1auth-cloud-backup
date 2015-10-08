@@ -1,5 +1,5 @@
 #!/usr/local/bin/bash
-#version 0.2.73
+#version 0.2.75
 CONFIG="/root/scripts/cloud_backup.conf"
 
 usage()
@@ -536,6 +536,11 @@ cleanup_incomplete()
   fi
 }
 
+gen_swift_string()
+{
+  echo "swift -A ${CLOUDFILES_AUTHURL} -U ${TENANT_NAME}:${USER_NAME} -K ${CLOUDFILES_APIKEY} list"
+  echo "read man swift for available commands"
+}
 
 case "$1" in
   backup)
@@ -572,6 +577,10 @@ case "$1" in
 
   cleanup)
     cleanup_incomplete
+    ;;
+    
+  swift)
+    gen_swift_string
     ;;
     
   *)
