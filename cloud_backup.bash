@@ -526,9 +526,14 @@ cleanup_incomplete()
   settmp
   setlogs
   #cleaning incomplete backup chains
-  export FTP_PASSWORD="${CLOUDFILES_APIKEY}"
-  export CLOUDFILES_USERNAME="$TENANT_NAME.$USER_NAME"
-  $DUPLY -v3 ${STATIC_OPTIONS} --force cleanup ftp://${CLOUDFILES_USERNAME}@${CLOUDFILES_FTPHOST}/${container}
+  if [ "$FTPUPLOAD" == "yes" ]; then
+    export CLOUDFILES_USERNAME="$TENANT_NAME.$USER_NAME"
+    export FTP_PASSWORD="${CLOUDFILES_APIKEY}"
+    $DUPLY -v3 ${STATIC_OPTIONS} --force cleanup ftp://${CLOUDFILES_USERNAME}@${CLOUDFILES_FTPHOST}/${container}
+  else
+    export CLOUDFILES_USERNAME="$TENANT_NAME:$USER_NAME"
+    $DUPLY -v3 ${STATIC_OPTIONS} --force cleanup cf+http://${container}
+  fi
 }
 
 
