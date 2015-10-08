@@ -39,6 +39,7 @@ usage()
   echo "'cloud_backup.bash list'   - shows list of backuped files"
   echo "'cloud_backup.bash check'  - function for nrpe checks"
   echo "'cloud_backup.bash cleanup'- cleaning incomplete backup chains"
+  echo "'cloud_backup.bash swift'  - to generate string for swift"
 }
 
 
