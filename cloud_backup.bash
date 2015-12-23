@@ -1,5 +1,5 @@
 #!/usr/local/bin/bash
-#version 0.2.75
+#version 0.2.76
 CONFIG="/root/scripts/cloud_backup.conf"
 
 usage()
@@ -120,7 +120,14 @@ include_file()
 
 case `uname -s` in
   Linux)
-    for i in `/bin/mount|cut -d ' ' -f 1 | grep -v "swap\|devpts\|proc\|sysfs\|tmpfs\|none" | sort | uniq`; do grep $i /etc/fstab | head -n 1 | awk '{print $2}'; done >/root/scripts/cloud_backup_inc.list
+    if (ls /dev/mapper/w-home >/dev/null 2>&1) ; then
+        for i in `/bin/mount|cut -d ' ' -f 1 | grep -v "swap\|devpts\|proc\|sysfs\|tmpfs\|none" | sort | uniq`; do grep $i /etc/fstab | head -n 1 | awk '{print $2}'; done >/root/scripts/cloud_backup_inc.list
+    else
+        DEVICES=`/bin/mount|cut -d ' ' -f 1 | grep -v 'swap\|devpts\|proc\|sysfs\|tmpfs\|none' | sort | uniq`;
+        blks=`for i in $DEVICES; do blkid|grep $i|cut -d '"' -f 2; done`;
+        munts=`for i in $blks; do grep $i /etc/fstab | head -n 1| awk '{print $2}'; done`;
+        echo "$munts" >/root/scripts/cloud_backup_inc.list ;
+    fi
   ;;
 
   FreeBSD)
