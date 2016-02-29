@@ -1,5 +1,5 @@
 #!/usr/local/bin/bash
-#version 0.2.76
+#version 0.2.78
 CONFIG="/root/scripts/cloud_backup.conf"
 
 usage()
@@ -34,12 +34,13 @@ usage()
   echo "  cloud_backup.bash restore full /home/koi/full_restored"
   echo "  Will be restored full copy to the folder /home/koi/full_restored"
   echo "##########################################################################################"
-  echo "'cloud_backup.bash delete' - will remove server container from the cloud storage"
-  echo "'cloud_backup.bash status' - shows current status of the backup"
-  echo "'cloud_backup.bash list'   - shows list of backuped files"
-  echo "'cloud_backup.bash check'  - function for nrpe checks"
-  echo "'cloud_backup.bash cleanup'- cleaning incomplete backup chains"
-  echo "'cloud_backup.bash swift'  - to generate string for swift"
+  echo "'cloud_backup.bash delete'     - will remove server container from the cloud storage"
+  echo "'cloud_backup.bash status'     - shows current status of the backup"
+  echo "'cloud_backup.bash list'       - shows list of backuped files"
+  echo "'cloud_backup.bash check'      - function for nrpe checks"
+  echo "'cloud_backup.bash cleanup'    - cleaning incomplete backup chains"
+  echo "'cloud_backup.bash swift'      - to generate string for swift"
+  echo "'cloud_backup.bash removelock' - kills all locks"
 }
 
 
@@ -550,6 +551,18 @@ gen_swift_string()
   echo "read man swift for available commands"
 }
 
+removelock_installer()
+{
+  whichbash=`which bash`
+  echo "$whichbash /root/scripts/cloud_backup.bash removelock" >> /etc/rc.local
+}
+
+remove_all_locks()
+{
+  rm -f ${LOGDIR}/backup.lock
+  rm -f ${ARCHDIR}/*/lockfile.lock
+}
+
 case "$1" in
   backup)
     backup
@@ -589,6 +602,10 @@ case "$1" in
     
   swift)
     gen_swift_string
+    ;;
+    
+  removelock)
+    remove_all_locks
     ;;
     
   *)
