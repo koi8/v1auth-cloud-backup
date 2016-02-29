@@ -1,5 +1,5 @@
 #!/usr/local/bin/bash
-#version 0.2.78
+#version 0.2.79
 CONFIG="/root/scripts/cloud_backup.conf"
 
 usage()
@@ -363,7 +363,7 @@ case `uname -s` in
     yum install -y python-cloudfiles duplicity trickle python-lockfile rpl
     chmod 755 /root/scripts/cloud_backup.bash
     rpl -e '#!/usr/local/bin/bash' '#!/bin/bash' /root/scripts/cloud_backup.bash
-    
+
     #nrpe
     [ -e /usr/lib64/nagios/plugins/cloud_backup.bash ] || ln -s /root/scripts/cloud_backup.bash /usr/lib64/nagios/plugins/cloud_backup.bash && echo "Symlink /usr/lib64/nagios/plugins/cloud_backup.bash created"
     grep -q 'check_managed_backup' /etc/nagios/nrpe.cfg || echo "command[check_managed_backup]=/usr/lib64/nagios/plugins/cloud_backup.bash check" >> /etc/nagios/nrpe.cfg && /sbin/service nrpe restart && echo "NRPE command installed"
@@ -417,6 +417,9 @@ case `uname -s` in
     ;;
     
 esac
+
+#autoremove lock
+removelock_installer
 
 #config
 ls ~/scripts/cloud_backup.conf || config_setup && echo "Config installed, fill in credentials"
