@@ -1,5 +1,5 @@
 #!/usr/local/bin/bash
-#version 0.2.79
+#version 0.2.80
 CONFIG="/root/scripts/cloud_backup.conf"
 
 usage()
@@ -121,7 +121,7 @@ include_file()
 
 case `uname -s` in
   Linux)
-    if (ls /dev/mapper/w-home >/dev/null 2>&1) ; then
+    if ((ls /dev/mapper/w-home >/dev/null 2>&1) || (ls /dev/mapper/myvg-rootvol >/dev/null 2>&1)); then
         for i in `/bin/mount|cut -d ' ' -f 1 | grep -v "swap\|devpts\|proc\|sysfs\|tmpfs\|none" | sort | uniq`; do grep $i /etc/fstab | head -n 1 | awk '{print $2}'; done >/root/scripts/cloud_backup_inc.list
     else
         DEVICES=`/bin/mount|cut -d ' ' -f 1 | grep -v 'swap\|devpts\|proc\|sysfs\|tmpfs\|none' | sort | uniq`;
